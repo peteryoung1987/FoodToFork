@@ -135,15 +135,27 @@ async function sync() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Syncing...";
     try {
-        const r = await fetch(state.su + "?action=pullAll");
-        const d = await r.json();
+        // We MUST use the full URL and let Google handle the redirect
+        const response = await fetch(state.su, {
+            method: 'GET',
+            mode: 'cors', // Ensure CORS is enabled
+        });
+        
+        const d = await response.json();
+        
+        if(d.error) throw new Error(d.error);
+
         state.ings = d.ingredients || [];
         state.staples = d.staples || [];
+        
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderI();
         renderStapleTags();
         document.getElementById('status').innerText = "Ready";
-    } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
+    } catch(e) { 
+        console.error("Full Error:", e);
+        document.getElementById('status').innerText = "Sync Error"; 
+    }
 }
 
 async function pushAll() {
