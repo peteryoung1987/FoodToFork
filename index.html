@@ -217,7 +217,9 @@ async function generate() {
 async function getRecipe(meal) {
     const m = document.createElement('div');
     m.className = 'recipe-modal';
-    m.innerHTML = `<div style="max-width:500px; margin:auto;"><h2>Preparing Recipe...</h2></div>`;
+    // Adding a specific ID so we can target it easily for removal
+    m.id = 'recipe-overlay';
+    m.innerHTML = `<div style="max-width:500px; margin:auto; text-align:center;"><h2>Preparing Recipe...</h2></div>`;
     document.body.appendChild(m);
 
     const p = `
@@ -229,6 +231,7 @@ async function getRecipe(meal) {
     4. Use standard UK pantry essentials as needed.
     5. DO NOT mention ingredients not used in this recipe.
     6. Tone: Direct, UK-centric, professional yet casual.
+    7. Include a "Shopping List" for specific recipe items with UK prices.
     `;
 
     try {
@@ -238,8 +241,25 @@ async function getRecipe(meal) {
         });
         const d = await r.json();
         const recipeText = d.candidates[0].content.parts[0].text;
-        m.innerHTML = `<div style="max-width:500px; margin:auto;"><h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap; line-height:1.5;">${recipeText}</div><button class="btn btn-p" onclick="this.parentElement.parentElement.remove()">Close</button></div>`;
-    } catch(e) { m.innerHTML = "Recipe could not be loaded."; }
+        
+        m.innerHTML = `
+            <div style="max-width:500px; margin:0 auto 100px auto; position:relative;">
+                <h1 style="font-family:Playfair Display; margin-bottom:1rem; padding-top:1rem;">${meal}</h1>
+                <div style="white-space:pre-wrap; line-height:1.6; font-size:1rem; color:#44403C;">${recipeText}</div>
+                <div style="position: sticky; bottom: 20px; left: 0; right: 0; background: white; padding: 10px 0;">
+                    <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">← Back to Meal Plan</button>
+                </div>
+            </div>
+        `;
+    } catch(e) { 
+        m.innerHTML = `
+            <div style="max-width:500px; margin:auto; text-align:center;">
+                <h2>Connection Error</h2>
+                <p>Could not load the recipe.</p>
+                <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">Back</button>
+            </div>
+        `; 
+    }
 }
 
 async function regenMeal(date, hint = "") {
