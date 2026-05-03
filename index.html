@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fridge to Fork v0.021</title>
+    <title>Fridge to Fork v0.022</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
@@ -193,7 +193,8 @@ async function generate() {
     btn.disabled = true; btn.innerText = "Processing...";
     
     const prompt = `
-    Family of 3 (2 adults, 9yo girl). Sunday Roast is mandatory.
+    Lunch : just for single male - should be cored in one protein and be high volume low calorie.
+    Dinner: Family of 3 (2 adults, 9yo girl). Sunday Roast is mandatory.
     INVENTORY: ${state.ings.map(i => i.Qty + i.Unit + ' ' + i.Item).join(', ')}.
     USER STAPLES: ${state.staples.join(', ')}.
     UNIVERSAL PANTRY: Assume all standard UK pantry essentials (Pasta, Rice, Flour, Sugar, Oil, Herbs, Spices, Stock Cubes, Bread, Condiments).
