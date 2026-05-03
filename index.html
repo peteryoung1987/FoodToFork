@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fridge to Fork v2.2</title>
+    <title>Fridge to Fork v2.3</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
@@ -188,7 +188,6 @@ async function generate() {
     if(!state.ak) return alert("API Key Required");
     btn.disabled = true; btn.innerText = "Chef is thinking...";
     
-    // THE GLOBAL "NORMAL STAPLES" LOGIC
     const prompt = `
     Family of 3 (2 adults, 9yo girl). 2.1 ratio (Lunch for 1, Dinner for 3).
     Sunday Roast is mandatory.
@@ -207,7 +206,8 @@ async function generate() {
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
         const d = await r.json();
-        const text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+        const text = d.candidates[0].content.parts[0].text.replace(/```json|
+```/gi, "").trim();
         state.plan = JSON.parse(text);
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderP(); pushAll();
@@ -230,7 +230,7 @@ async function getRecipe(meal) {
     3. Use User Staples: ${state.staples.join(', ')}.
     4. You MAY use any standard UK pantry essentials (Pasta, Rice, Flour, Oil, Stock, Bread, Spices, etc.).
     5. DO NOT mention ingredients from the list that aren't used in this recipe. No jokes about other food in the fridge.
-    6. Tone: Direct, casual, UK-centric.
+    6. Tone: Direct, casual, UK-centric. Swearing allowed. Max 200 words.
     `;
 
     try {
@@ -241,7 +241,7 @@ async function getRecipe(meal) {
         const d = await r.json();
         const recipeText = d.candidates[0].content.parts[0].text;
         m.innerHTML = `<div style="max-width:500px; margin:auto;"><h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap; line-height:1.5;">${recipeText}</div><button class="btn btn-p" onclick="this.parentElement.remove()">Close</button></div>`;
-    } catch(e) { m.innerHTML = "Recipe failed. Probably the WiFi. Or the ghost in the machine."; }
+    } catch(e) { m.innerHTML = "Recipe failed."; }
 }
 
 async function regenMeal(date, hint = "") {
@@ -251,6 +251,21 @@ async function regenMeal(date, hint = "") {
     Inventory: ${state.ings.map(i=>i.Item).join(',')}. 
     Standard UK Pantry items are available.
     Return JSON: {"dinner":"...", "used_ings":[]}`;
+    
+    try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+        });
+        const d = await r.json();
+        const res = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/gi, ""));
+        const idx = state.plan.days.findIndex(x => x.date === date);
+        state.plan.days[idx].dinner = res.dinner;
+        state.plan.days[idx].used_ings = res.used_ings;
+        renderP(); pushAll();
+    } catch(e) { alert("Failed to regen."); }
+    document.getElementById('status').innerText = "Ready";
+}
 
 function hintMeal(date) { const h = prompt("Any specific idea?"); if(h) regenMeal(date, h); }
 
