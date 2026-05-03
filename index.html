@@ -40,12 +40,12 @@
 <header><h1>Fridge to Fork</h1><span id="status">Ready</span></header>
 
 <div class="tabs">
-    <button class="tab active" id="t-plan" onclick="sh('plan')">Plan</button>
+    <button class="tab" id="t-plan" onclick="sh('plan')">Plan</button>
     <button class="tab" id="t-ings" onclick="sh('ings')">Fridge</button>
     <button class="tab" id="t-set" onclick="sh('set')">Settings</button>
 </div>
 
-<div id="v-plan" class="view active">
+<div id="v-plan" class="view">
     <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
     <div id="pCont" style="margin-top:1rem;"></div>
 </div>
@@ -91,27 +91,21 @@
 </div>
 
 <script>
-// Safely load state
 let state = { ings: [], staples: [], plan: null, ak: '', su: '' };
 try {
     const saved = localStorage.getItem('ftf_v2');
     if (saved) state = JSON.parse(saved);
-} catch (e) { console.error("State reset required"); }
+} catch (e) {}
 
 let editingIdx = null;
 
 function sh(v) {
-    // Hide all views
-    document.querySelectorAll('.view').forEach(e => e.style.display = 'none');
+    document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-    
-    // Show selected view
-    const targetView = document.getElementById('v-' + v);
-    if(targetView) targetView.style.display = 'block';
-    
-    // Update tab styling
-    const activeTab = document.querySelector(`.tab[onclick="sh('${v}')"]`);
-    if(activeTab) activeTab.classList.add('active');
+    const target = document.getElementById('v-' + v);
+    if(target) target.classList.add('active');
+    const tab = document.querySelector(`.tab[onclick="sh('${v}')"]`);
+    if(tab) tab.classList.add('active');
 
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
@@ -150,22 +144,22 @@ function renderI() {
     list.innerHTML = (state.ings || []).map((i, idx) => {
         if(editingIdx === idx) {
             return `<div class="edit-card">
-                <label>Name</label><input type="text" id="ed-n" value="${i.Item}">
+                <label>Name</label><input type="text" id="ed-n" value="${i.Item || ''}">
                 <div class="ing-row">
-                    <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${i.Qty}"></div>
+                    <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${i.Qty || 0}"></div>
                     <div style="flex:1"><label>Unit</label>
                         <select id="ed-u">
-                            <option value="units" ${i.Unit==='units'?'selected':''}>units</option>
-                            <option value="g" ${i.Unit==='g'?'selected':''}>g</option>
+                            <option value="units" ${(i.Unit === 'units' || !i.Unit) ? 'selected' : ''}>units</option>
+                            <option value="g" ${i.Unit === 'g' ? 'selected' : ''}>g</option>
                         </select>
                     </div>
                 </div>
-                <label>Use By</label><input type="date" id="ed-d" value="${i['Use By'] || ''}">
+                <label>Use By</label><input type="date" id="ed-d" value="${i['Use By'] ? new Date(i['Use By']).toISOString().split('T')[0] : ''}">
                 <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
             </div>`;
         }
         return `<div class="ing-item">
-            <div><strong>${i.Item}</strong><br><small>${i.Qty}${i.Unit || ' units'} | Exp: ${fmtD(i['Use By'])}</small></div>
+            <div><strong>${i.Item}</strong><br><small>${i.Qty || 0}${i.Unit || ' units'} | Exp: ${fmtD(i['Use By'])}</small></div>
             <div style="display:flex; gap:5px;">
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${i.Item}')">Eat</button>
@@ -176,8 +170,15 @@ function renderI() {
 
 function startEdit(idx) { editingIdx = idx; renderI(); }
 function cancelEdit() { editingIdx = null; renderI(); }
+
 function confirmEdit(idx) {
-    state.ings[idx] = { Item: document.getElementById('ed-n').value, Qty: document.getElementById('ed-q').value, Unit: document.getElementById('ed-u').value, 'Use By': document.getElementById('ed-d').value, Storage: state.ings[idx].Storage };
+    state.ings[idx] = { 
+        Item: document.getElementById('ed-n').value, 
+        Qty: document.getElementById('ed-q').value, 
+        Unit: document.getElementById('ed-u').value, 
+        'Use By': document.getElementById('ed-d').value, 
+        Storage: state.ings[idx].Storage 
+    };
     editingIdx = null;
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderI();
@@ -208,7 +209,13 @@ async function pushAll() {
 }
 
 function pushItem() {
-    state.ings.push({ Item: document.getElementById('n').value, Qty: document.getElementById('q').value, Unit: document.getElementById('u').value, Storage: document.getElementById('s').value, 'Use By': document.getElementById('d').value });
+    state.ings.push({ 
+        Item: document.getElementById('n').value, 
+        Qty: document.getElementById('q').value, 
+        Unit: document.getElementById('u').value, 
+        Storage: document.getElementById('s').value, 
+        'Use By': document.getElementById('d').value 
+    });
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderI();
     pushAll();
@@ -251,11 +258,10 @@ function renderP() {
     cont.innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day} (${d.date})</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
 }
 
-// Initial Setup
 document.getElementById('ak').value = state.ak || '';
 document.getElementById('su').value = state.su || '';
 if(state.plan) renderP();
-sh('plan'); // Explicitly show the plan view on load
+sh('plan');
 </script>
 </body>
 </html>
