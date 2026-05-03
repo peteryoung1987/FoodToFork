@@ -252,9 +252,24 @@ async function generate() {
   btn.disabled = true; debug.style.display = 'none';
   document.getElementById('pCont').innerHTML = "Chef is thinking...";
   const today = new Date().toLocaleDateString('en-GB');
-  const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
-  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => (i.Quantity||i.qty) + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
-  Lunch: Healthy and low calorie. Dinner: Cooked family meal. Sunday: Roast.`;
+    // this should be a detailed prompt tp the gemini API with the staples, the ingredients and the general info to show that staples are available etc
+    const prompt = `
+    Context:
+    - Family of 3: 2 adults and one 9-year-old girl.
+    - Lunch: For 1 person only. Must be quick, easy, and low-calorie.
+    - Dinner: Family meal for all 3. Hearty but balanced.
+    - Variety: Do NOT repeat the same core protein/ingredient more than twice a week. 
+    - Sunday: Must be a traditional Roast.
+    - Inventory Logic: Use the quantities provided. If I have "2 Chicken Breasts", that is ONE dinner for 3 people; do not use them again.
+
+    Ingredients Available: ${state.ings.map(i => (i.Quantity||i.qty) + (i.Unit||'units') + ' ' + i.Item).join(', ')}
+    Staples (assume always available): ${state.staples.join(', ')}
+
+    Return ONLY a JSON object:
+    {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"Description","dinner":"Description"}]}
+    
+    Plan for 7 days starting from ${today}.
+  `;
 
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
