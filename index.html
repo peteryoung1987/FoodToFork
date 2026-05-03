@@ -26,14 +26,14 @@
         .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
         .edit-card { background: #FFF7ED; border: 2px solid var(--accent); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
         .ing-row { display: flex; gap: 10px; align-items: flex-end; }
-        .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px; }
-        .staple-tag { background: #E7E2DC; color: var(--ink); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-        .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; }
         .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
         .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
         .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
         .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
         .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
+        .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .staple-tag { background: #E7E2DC; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; }
+        .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -78,7 +78,7 @@
     <div class="card">
         <h2>Staples Manager</h2>
         <div style="display:flex; gap:8px; margin-bottom:15px;">
-            <input type="text" id="newStaple" placeholder="Add staple..." onkeydown="if(event.key==='Enter')addStapleTag()">
+            <input type="text" id="newStaple" placeholder="Add staple...">
             <button class="btn btn-p" style="width: auto;" onclick="addStapleTag()">Add</button>
         </div>
         <div id="stapleTags" class="staple-container"></div>
@@ -104,16 +104,14 @@ let editingIdx = null;
 function sh(v) {
     document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-    const target = document.getElementById('v-' + v);
-    if(target) target.classList.add('active');
-    const tab = document.querySelector(`.tab[onclick="sh('${v}')"]`);
-    if(tab) tab.classList.add('active');
+    document.getElementById('v-' + v).classList.add('active');
+    document.querySelector(`.tab[onclick="sh('${v}')"]`).classList.add('active');
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
 }
 
 function fmtD(dStr) {
-    if(!dStr) return '';
+    if(!dStr) return 'No Date';
     const d = new Date(dStr);
     return isNaN(d) ? dStr : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
@@ -127,46 +125,39 @@ function saveS() {
 
 function renderStapleTags() {
     const container = document.getElementById('stapleTags');
-    if(!container) return;
     container.innerHTML = (state.staples || []).map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
 }
 
 function addStapleTag() {
     const input = document.getElementById('newStaple');
-    const val = input.value.trim();
-    if(val && !state.staples.includes(val)) { state.staples.push(val); input.value = ''; renderStapleTags(); }
+    if(input.value.trim()) { state.staples.push(input.value.trim()); input.value = ''; renderStapleTags(); }
 }
 
 function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
 function renderI() {
     const list = document.getElementById('iList');
-    if(!list) return;
     list.innerHTML = (state.ings || []).map((i, idx) => {
-        // Mapping from your Sheet: A:Item, B:Category, C:Quantity, D:Unit, E:Storage, F:Use By
-        const name = i.Item || '';
-        const qty = i.Quantity || 0;
-        const unit = i.Unit || 'units';
-        const expiry = i['Use By'] || '';
+        // Headers from image_fd4185.png: A:Item, B:Category, C:Quantity, D:Unit, E:Storage, F:Use By
+        const name = i.Item || 'Unknown';
+        const qty = i.Quantity || '';
+        const unit = i.Unit || '';
+        const store = i.Storage || '';
+        const exp = i['Use By'] || '';
 
         if(editingIdx === idx) {
             return `<div class="edit-card">
                 <label>Name</label><input type="text" id="ed-n" value="${name}">
                 <div class="ing-row">
                     <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${qty}"></div>
-                    <div style="flex:1"><label>Unit</label>
-                        <select id="ed-u">
-                            <option value="units" ${unit === 'units' ? 'selected' : ''}>units</option>
-                            <option value="g" ${unit === 'g' ? 'selected' : ''}>g</option>
-                        </select>
-                    </div>
+                    <div style="flex:1"><label>Unit</label><input type="text" id="ed-u" value="${unit}"></div>
                 </div>
-                <label>Use By</label><input type="date" id="ed-d" value="${expiry ? new Date(expiry).toISOString().split('T')[0] : ''}">
+                <label>Use By</label><input type="date" id="ed-d" value="${exp ? new Date(exp).toISOString().split('T')[0] : ''}">
                 <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
             </div>`;
         }
         return `<div class="ing-item">
-            <div><strong>${name}</strong><br><small>${qty}${unit} | Exp: ${fmtD(expiry)}</small></div>
+            <div><strong>${name}</strong><br><small>${qty} ${unit} | ${store} | Exp: ${fmtD(exp)}</small></div>
             <div style="display:flex; gap:5px;">
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${name}')">Eat</button>
@@ -179,13 +170,12 @@ function startEdit(idx) { editingIdx = idx; renderI(); }
 function cancelEdit() { editingIdx = null; renderI(); }
 
 function confirmEdit(idx) {
-    // Ensuring order matches Sheet: Item, Category, Quantity, Unit, Storage, Use By
     state.ings[idx] = { 
         Item: document.getElementById('ed-n').value,
-        Category: state.ings[idx].Category || '', 
+        Category: state.ings[idx].Category || '', // Maintain col B
         Quantity: document.getElementById('ed-q').value, 
         Unit: document.getElementById('ed-u').value, 
-        Storage: state.ings[idx].Storage || 'Fridge',
+        Storage: state.ings[idx].Storage,
         'Use By': document.getElementById('ed-d').value
     };
     editingIdx = null;
@@ -204,7 +194,6 @@ async function sync() {
         state.staples = d.staples || [];
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderI();
-        renderStapleTags();
         document.getElementById('status').innerText = "Ready";
     } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
 }
@@ -218,10 +207,9 @@ async function pushAll() {
 }
 
 function pushItem() {
-    // New item order to match your Sheet columns
     state.ings.push({ 
         Item: document.getElementById('n').value, 
-        Category: '', // Placeholder for column B
+        Category: '', // Col B
         Quantity: document.getElementById('q').value, 
         Unit: document.getElementById('u').value, 
         Storage: document.getElementById('s').value, 
@@ -246,7 +234,6 @@ async function generate() {
   btn.disabled = true; debug.style.display = 'none';
   document.getElementById('pCont').innerHTML = "Chef is thinking...";
   const today = new Date().toLocaleDateString('en-GB');
-
   const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
   Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Quantity + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
   Lunch: Healthy and low calorie. Dinner: Cooked family meal. Sunday: Roast.`;
@@ -258,7 +245,6 @@ async function generate() {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const d = await r.json();
-    if (d.error) throw new Error(`${d.error.code}: ${d.error.message}`);
     let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
