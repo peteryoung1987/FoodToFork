@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fridge to Fork v0.020</title>
+    <title>Fridge to Fork v0.021</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
@@ -93,7 +93,7 @@ function saveS() {
     state.ak = document.getElementById('ak').value.trim();
     state.su = document.getElementById('su').value.trim();
     localStorage.setItem('ftf_v2', JSON.stringify(state));
-    alert("Saved");
+    alert("Credentials Saved");
 }
 
 function renderI() {
@@ -101,14 +101,14 @@ function renderI() {
     list.innerHTML = (state.ings || []).map((i, idx) => `
         <div class="ing-item">
             <div><strong>${i.Item}</strong><br><small>${i.Qty} ${i.Unit || ''}</small></div>
-            <button class="btn btn-s" style="width:auto; color:red;" onclick="eatItem('${i.Item}')">Eat</button>
+            <button class="btn btn-s" style="width:auto; color:red;" onclick="eatItem('${i.Item}')">Remove</button>
         </div>
     `).join('');
 }
 
 function renderStapleTags() {
     document.getElementById('stapleTags').innerHTML = (state.staples || []).map((s, i) => `
-        <div class="staple-tag">${s}<span onclick="state.staples.splice(${i},1);renderStapleTags()" style="cursor:pointer">×</span></div>
+        <div class="staple-tag">${s}<span onclick="state.staples.splice(${i},1);renderStapleTags()" style="cursor:pointer; margin-left:5px;">×</span></div>
     `).join('');
 }
 
@@ -120,20 +120,24 @@ function addStapleTag() {
 async function sync() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Syncing...";
-    const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
-    const d = await r.json();
-    state.ings = d.ingredients || [];
-    state.staples = d.staples || [];
-    if(d.plan) state.plan = d.plan;
-    localStorage.setItem('ftf_v2', JSON.stringify(state));
-    renderI(); renderP();
+    try {
+        const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
+        const d = await r.json();
+        state.ings = d.ingredients || [];
+        state.staples = d.staples || [];
+        if(d.plan) state.plan = d.plan;
+        localStorage.setItem('ftf_v2', JSON.stringify(state));
+        renderI(); renderP();
+    } catch(e) { console.error(e); }
     document.getElementById('status').innerText = "Ready";
 }
 
 async function pushAll() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Saving...";
-    await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'pushAll', ...state }) });
+    try {
+        await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'pushAll', ...state }) });
+    } catch(e) { console.error(e); }
     document.getElementById('status').innerText = "Ready";
 }
 
@@ -168,11 +172,11 @@ function renderP() {
         <div class="day-card">
             <div class="day-h">${d.day} (${d.date})</div>
             <div class="m-box">
-                <label>Lunch (Quick)</label>
+                <label>Lunch</label>
                 <p onclick="getRecipe('${d.lunch}')" style="cursor:pointer; text-decoration:underline;">${d.lunch}</p>
             </div>
             <div class="m-box">
-                <label>Dinner (Family)</label>
+                <label>Dinner</label>
                 <p onclick="getRecipe('${d.dinner}')" style="cursor:pointer; text-decoration:underline;">${d.dinner}</p>
                 <div style="margin-top:10px; display:flex; gap:5px;">
                     <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="regenMeal('${d.date}')">🎲 Regen</button>
@@ -186,18 +190,14 @@ function renderP() {
 async function generate() {
     const btn = document.getElementById('gBtn');
     if(!state.ak) return alert("API Key Required");
-    btn.disabled = true; btn.innerText = "Chef is thinking...";
+    btn.disabled = true; btn.innerText = "Processing...";
     
     const prompt = `
-    Family of 3 (2 adults, 9yo girl). 2.1 ratio (Lunch for 1, Dinner for 3).
-    Sunday Roast is mandatory.
-    
+    Family of 3 (2 adults, 9yo girl). Sunday Roast is mandatory.
     INVENTORY: ${state.ings.map(i => i.Qty + i.Unit + ' ' + i.Item).join(', ')}.
     USER STAPLES: ${state.staples.join(', ')}.
-    
-    UNIVERSAL PANTRY: Assume the user has all "normal" UK pantry essentials (Pasta, Rice, Flour, Sugar, Oil, Dried Herbs, Spices, Stock Cubes, Bread, Condiments/Mayo/Ketchup).
-    
-    Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":["item from inventory"]}]}. 
+    UNIVERSAL PANTRY: Assume all standard UK pantry essentials (Pasta, Rice, Flour, Sugar, Oil, Herbs, Spices, Stock Cubes, Bread, Condiments).
+    Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":["item"]}]}. 
     Plan 7 days from ${new Date().toLocaleDateString('en-GB')}.`;
 
     try {
@@ -206,8 +206,7 @@ async function generate() {
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
         const d = await r.json();
-        const text = d.candidates[0].content.parts[0].text.replace(/```json|
-```/gi, "").trim();
+        const text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
         state.plan = JSON.parse(text);
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderP(); pushAll();
@@ -218,19 +217,18 @@ async function generate() {
 async function getRecipe(meal) {
     const m = document.createElement('div');
     m.className = 'recipe-modal';
-    m.innerHTML = `<div style="max-width:500px; margin:auto;"><h2>Chef is writing...</h2></div>`;
+    m.innerHTML = `<div style="max-width:500px; margin:auto;"><h2>Preparing Recipe...</h2></div>`;
     document.body.appendChild(m);
 
     const p = `
-    TASK: Write a punchy recipe for "${meal}".
-    
+    TASK: Write a recipe for "${meal}".
     CONSTRAINTS:
-    1. Focus ONLY on the meal: ${meal}.
-    2. Use items from Inventory: ${state.ings.map(i=>i.Item).join(', ')}.
+    1. Focus ONLY on: ${meal}.
+    2. Use Inventory: ${state.ings.map(i=>i.Item).join(', ')}.
     3. Use User Staples: ${state.staples.join(', ')}.
-    4. You MAY use any standard UK pantry essentials (Pasta, Rice, Flour, Oil, Stock, Bread, Spices, etc.).
-    5. DO NOT mention ingredients from the list that aren't used in this recipe. No jokes about other food in the fridge.
-    6. Tone: Direct, casual, UK-centric. Swearing allowed. Max 200 words.
+    4. Use standard UK pantry essentials as needed.
+    5. DO NOT mention ingredients not used in this recipe.
+    6. Tone: Direct, UK-centric, professional yet casual.
     `;
 
     try {
@@ -240,8 +238,8 @@ async function getRecipe(meal) {
         });
         const d = await r.json();
         const recipeText = d.candidates[0].content.parts[0].text;
-        m.innerHTML = `<div style="max-width:500px; margin:auto;"><h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap; line-height:1.5;">${recipeText}</div><button class="btn btn-p" onclick="this.parentElement.remove()">Close</button></div>`;
-    } catch(e) { m.innerHTML = "Recipe failed."; }
+        m.innerHTML = `<div style="max-width:500px; margin:auto;"><h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap; line-height:1.5;">${recipeText}</div><button class="btn btn-p" onclick="this.parentElement.parentElement.remove()">Close</button></div>`;
+    } catch(e) { m.innerHTML = "Recipe could not be loaded."; }
 }
 
 async function regenMeal(date, hint = "") {
@@ -260,16 +258,22 @@ async function regenMeal(date, hint = "") {
         const d = await r.json();
         const res = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/gi, ""));
         const idx = state.plan.days.findIndex(x => x.date === date);
-        state.plan.days[idx].dinner = res.dinner;
-        state.plan.days[idx].used_ings = res.used_ings;
-        renderP(); pushAll();
-    } catch(e) { alert("Failed to regen."); }
+        if (idx !== -1) {
+            state.plan.days[idx].dinner = res.dinner;
+            state.plan.days[idx].used_ings = res.used_ings;
+            localStorage.setItem('ftf_v2', JSON.stringify(state));
+            renderP(); pushAll();
+        }
+    } catch(e) { alert("Could not update meal."); }
     document.getElementById('status').innerText = "Ready";
 }
 
-function hintMeal(date) { const h = prompt("Any specific idea?"); if(h) regenMeal(date, h); }
+function hintMeal(date) { 
+    const h = prompt("Any specific idea for this meal?"); 
+    if(h) regenMeal(date, h); 
+}
 
-// Init
+// Init UI and Data
 document.getElementById('ak').value = state.ak || '';
 document.getElementById('su').value = state.su || '';
 sh('plan');
