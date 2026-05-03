@@ -8,48 +8,58 @@
 <style>
   :root {
     --cream: #F7F3EE; --warm-white: #FDFAF7; --ink: #1C1917; --ink-soft: #44403C;
-    --ink-muted: #78716C; --accent: #C2410C; --accent-soft: #FEF3EE; --accent-border: #FDBA99;
-    --green: #15803D; --border: #E7E2DC; --border-strong: #D4CEC7; --card: #FFFFFF; --radius: 12px;
+    --ink-muted: #78716C; --accent: #C2410C; --accent-soft: #FEF3EE; --border: #E7E2DC; 
+    --card: #FFFFFF; --radius: 12px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.6; }
-  header { background: var(--ink); color: var(--cream); padding: 1rem 1.5rem; display: flex; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  .tabs { background: var(--ink); display: flex; padding: 0 1.5rem; border-bottom: 1px solid #2C2927; }
-  .tab { font-size: 0.8rem; font-weight: 500; text-transform: uppercase; color: #A8A29E; padding: 0.75rem 1rem; border: none; background: none; cursor: pointer; }
+  
+  header { background: var(--ink); color: var(--cream); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
+  
+  .tabs { background: var(--ink); display: flex; padding: 0 1.5rem; border-bottom: 1px solid #2C2927; overflow-x: auto; }
+  .tab { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; color: #A8A29E; padding: 0.8rem 1rem; border: none; background: none; cursor: pointer; white-space: nowrap; }
   .tab.active { color: var(--cream); border-bottom: 2px solid var(--accent); }
+
   .view { display: none; padding: 1.5rem; max-width: 760px; margin: 0 auto; }
   .view.active { display: block; }
-  .setup-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
-  .btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; padding: 0.6rem 1.25rem; border-radius: 8px; border: none; cursor: pointer; }
-  .btn-primary { background: var(--accent); color: white; width: 100%; margin-top: 10px; }
-  .btn-secondary { background: var(--card); border: 1px solid var(--border-strong); width: 100%; margin-top: 10px; }
+
+  .setup-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+  h2 { font-family: 'Playfair Display', serif; margin-bottom: 1rem; font-size: 1.2rem; }
+
+  .btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; padding: 0.7rem 1.25rem; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; }
+  .btn-primary { background: var(--accent); color: white; width: 100%; }
+  .btn-secondary { background: var(--warm-white); border: 1px solid var(--border); width: 100%; margin-top: 8px; }
+  .btn-primary:active, .btn-secondary:active { transform: scale(0.98); }
+
   .day-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
-  .day-header { padding: 0.75rem 1.25rem; background: var(--ink); color: var(--cream); font-family: 'Playfair Display', serif; }
-  .meal-row { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); }
-  .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  input, select { width: 100%; padding: 0.5rem; margin: 5px 0 15px; border: 1px solid var(--border-strong); border-radius: 5px; }
+  .day-header { padding: 0.6rem 1.25rem; background: var(--ink); color: var(--cream); font-family: 'Playfair Display', serif; font-weight: 600; }
+  .meal-box { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+  .meal-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+
+  input, select, textarea { width: 100%; padding: 0.6rem; margin: 4px 0 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
+  .staple-tag { display: inline-block; background: var(--accent-soft); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin: 2px; }
 </style>
 </head>
 <body>
 
-<header><h1>Fridge to Fork</h1><span id="sheetStatus">No sheet</span></header>
+<header><h1>Fridge to Fork</h1><span id="sheetStatus" style="font-size:0.7rem; opacity:0.7;">Checking...</span></header>
 
 <div class="tabs">
-  <button class="tab active" onclick="showView('plan')">Plan</button>
+  <button class="tab active" onclick="showView('plan')">The Plan</button>
   <button class="tab" onclick="showView('ingredients')">Ingredients</button>
   <button class="tab" onclick="showView('settings')">Settings</button>
 </div>
 
 <div id="view-plan" class="view active">
   <button class="btn btn-primary" id="generateBtn" onclick="generatePlan()">Generate Week Plan</button>
-  <div id="planContent"></div>
+  <div id="planContent" style="margin-top:1.5rem;"></div>
 </div>
 
 <div id="view-ingredients" class="view">
   <div class="setup-card">
-    <h2>Add Manually</h2>
-    <input type="text" id="iName" placeholder="Item Name">
+    <h2>Add to Fridge</h2>
+    <input type="text" id="iName" placeholder="Item Name (e.g. Minced Beef)">
     <input type="date" id="iDate">
     <button class="btn btn-primary" onclick="addIngredient()">Add Item</button>
     <button class="btn btn-secondary" onclick="loadFromSheet()">↓ Sync from Google Sheet</button>
@@ -59,12 +69,16 @@
 
 <div id="view-settings" class="view">
   <div class="setup-card">
-    <h2>Settings</h2>
-    <label>Gemini API Key</label>
-    <input type="password" id="apiKey">
-    <label>Sheet CSV URL</label>
-    <input type="text" id="sheetUrl" placeholder="Paste CSV link here">
-    <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+    <h2>API & Sheet</h2>
+    <label>Gemini API Key</label><input type="password" id="apiKey">
+    <label>Sheet CSV URL</label><input type="text" id="sheetUrl">
+    <button class="btn btn-primary" onclick="saveSettings()">Save Config</button>
+  </div>
+  <div class="setup-card">
+    <h2>Cupboard Staples</h2>
+    <p style="font-size:0.8rem; color:var(--ink-muted); margin-bottom:10px;">Separate with commas</p>
+    <textarea id="staples" rows="3" onchange="saveStaples()"></textarea>
+    <div id="staplesList" style="margin-top:10px;"></div>
   </div>
 </div>
 
@@ -72,7 +86,7 @@
 let state = JSON.parse(localStorage.getItem('ftf_state')) || {
   ingredients: [],
   plan: null,
-  settings: { apiKey: '', sheetUrl: '', staples: ['oil', 'salt', 'pepper', 'pasta', 'rice', 'eggs'] }
+  settings: { apiKey: '', sheetUrl: '', staples: 'Salt, Pepper, Olive Oil, Pasta, Rice, Eggs, Flour, Sugar' }
 };
 
 function save() { 
@@ -85,6 +99,7 @@ function showView(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   if(name === 'ingredients') renderIngredients();
+  if(name === 'settings') renderStaples();
 }
 
 function addIngredient() {
@@ -93,14 +108,15 @@ function addIngredient() {
   state.ingredients.push({ name, useBy: document.getElementById('iDate').value, id: Date.now() });
   save();
   renderIngredients();
+  document.getElementById('iName').value = '';
 }
 
 function renderIngredients() {
   const list = document.getElementById('ingredientsList');
   list.innerHTML = state.ingredients.map(i => `
-    <div class="setup-card" style="display:flex; justify-content:space-between;">
-      <div><strong>${i.name}</strong><br><small>${i.useBy || 'No date'}</small></div>
-      <button onclick="removeIng(${i.id})">✕</button>
+    <div class="setup-card" style="display:flex; justify-content:space-between; align-items:center; padding:0.8rem 1.25rem;">
+      <div><strong>${i.name}</strong><br><small style="color:var(--accent);">${i.useBy || 'No date'}</small></div>
+      <button class="btn" style="background:none; color:var(--ink-muted); font-size:1.2rem;" onclick="removeIng(${i.id})">✕</button>
     </div>
   `).join('');
 }
@@ -112,35 +128,57 @@ function removeIng(id) {
 }
 
 async function loadFromSheet() {
-  if(!state.settings.sheetUrl) return alert("Paste your CSV URL in Settings first!");
+  if(!state.settings.sheetUrl) return alert("Add your CSV link in Settings!");
   try {
     const res = await fetch(state.settings.sheetUrl);
     const text = await res.text();
+    if (text.includes("<!DOCTYPE")) throw new Error("Wrong link type! Ensure it is 'CSV' format.");
+    
     const rows = text.split('\n').slice(1);
-    state.ingredients = rows.filter(r => r.trim()).map(r => {
+    state.ingredients = rows.filter(r => r.trim() && r.split(',')[0]).map(r => {
       const cols = r.split(',');
-      return { name: cols[0], qty: cols[1], useBy: cols[4], id: Date.now() + Math.random() };
+      return { name: cols[0].replace(/"/g, '').trim(), useBy: cols[4] || '', id: Date.now() + Math.random() };
     });
     save();
     renderIngredients();
-    alert("Synced!");
-  } catch (e) { alert("Error: " + e.message); }
+    alert("Sorted! Ingredients synced.");
+  } catch (e) { alert("Sync failed: " + e.message); }
 }
 
 function saveSettings() {
   state.settings.apiKey = document.getElementById('apiKey').value;
   state.settings.sheetUrl = document.getElementById('sheetUrl').value;
   save();
-  alert("Saved!");
+  alert("Settings saved!");
+}
+
+function saveStaples() {
+  state.settings.staples = document.getElementById('staples').value;
+  save();
+  renderStaples();
+}
+
+function renderStaples() {
+  const area = document.getElementById('staples');
+  area.value = state.settings.staples;
+  const tags = state.settings.staples.split(',').map(s => `<span class="staple-tag">${s.trim()}</span>`).join('');
+  document.getElementById('staplesList').innerHTML = tags;
 }
 
 async function generatePlan() {
-  if(!state.settings.apiKey) return alert("Add API key in Settings!");
+  if(!state.settings.apiKey) return alert("Add your Gemini API key in Settings!");
   const btn = document.getElementById('generateBtn');
   btn.disabled = true;
-  document.getElementById('planContent').innerHTML = '<div class="spinner"></div>';
+  btn.textContent = "Cooking up a plan...";
+  document.getElementById('planContent').innerHTML = '<div style="text-align:center; padding:2rem;"><div style="width:30px; height:30px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto;"></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
 
-  const prompt = `Plan 7 days of meals. Solo Lunch: assembly only. Family Dinner: cooked. Roast Sunday. Ingredients: ${state.ingredients.map(i => i.name).join(', ')}. Return ONLY JSON: {"days": [{"day": "Monday", "lunch": "...", "dinner": "..."}]}`;
+  const prompt = `Plan 7 days of meals for Pete. 
+  1. Solo Lunch: High protein, assembly-only, NO COOKING (e.g. salads, cold meats).
+  2. Family Dinner: Cooked meal for 3 (Pete, Wife, 9yo daughter). Mild/Medium spice.
+  3. Sunday: Traditional Roast Lunch.
+  Use these ingredients: ${state.ingredients.map(i => i.name).join(', ')}.
+  Assume these cupboard staples are available: ${state.settings.staples}.
+  Return ONLY JSON: {"days": [{"day": "Monday", "lunch": "...", "dinner": "..."}]}`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.settings.apiKey}`, {
@@ -155,8 +193,11 @@ async function generatePlan() {
     state.plan = JSON.parse(data.candidates[0].content.parts[0].text);
     save();
     renderPlan();
-  } catch (e) { document.getElementById('planContent').innerHTML = "Error: " + e.message; }
+  } catch (e) { 
+    document.getElementById('planContent').innerHTML = `<div class="setup-card" style="color:red;">Error: ${e.message}</div>`;
+  }
   btn.disabled = false;
+  btn.textContent = "Generate Week Plan";
 }
 
 function renderPlan() {
@@ -164,16 +205,24 @@ function renderPlan() {
   document.getElementById('planContent').innerHTML = state.plan.days.map(d => `
     <div class="day-card">
       <div class="day-header">${d.day}</div>
-      <div class="meal-row"><strong>Lunch:</strong> ${d.lunch}</div>
-      <div class="meal-row"><strong>Dinner:</strong> ${d.dinner}</div>
+      <div class="meal-box">
+        <div class="meal-label">Lunch (Solo)</div>
+        <div style="font-weight:500;">${d.lunch}</div>
+      </div>
+      <div class="meal-box">
+        <div class="meal-label">Dinner (Family)</div>
+        <div style="font-weight:500;">${d.dinner}</div>
+      </div>
     </div>
   `).join('');
 }
 
-// Load initial data
+// Initial Load
 document.getElementById('apiKey').value = state.settings.apiKey || '';
 document.getElementById('sheetUrl').value = state.settings.sheetUrl || '';
+renderStaples();
 renderPlan();
+save();
 </script>
 </body>
 </html>
