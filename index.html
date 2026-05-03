@@ -40,9 +40,9 @@
 <header><h1>Fridge to Fork</h1><span id="status">Ready</span></header>
 
 <div class="tabs">
-    <button class="tab active" onclick="sh('plan')">Plan</button>
-    <button class="tab" onclick="sh('ings')">Fridge</button>
-    <button class="tab" onclick="sh('set')">Settings</button>
+    <button class="tab active" id="t-plan" onclick="sh('plan')">Plan</button>
+    <button class="tab" id="t-ings" onclick="sh('ings')">Fridge</button>
+    <button class="tab" id="t-set" onclick="sh('set')">Settings</button>
 </div>
 
 <div id="v-plan" class="view active">
@@ -91,15 +91,28 @@
 </div>
 
 <script>
-let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [], plan: null, ak: '', su: '' };
+// Safely load state
+let state = { ings: [], staples: [], plan: null, ak: '', su: '' };
+try {
+    const saved = localStorage.getItem('ftf_v2');
+    if (saved) state = JSON.parse(saved);
+} catch (e) { console.error("State reset required"); }
+
 let editingIdx = null;
 
 function sh(v) {
-    document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+    // Hide all views
+    document.querySelectorAll('.view').forEach(e => e.style.display = 'none');
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-    document.getElementById('v-' + v).classList.add('active');
-    const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(t => { if(t.innerText.toLowerCase() === v.toLowerCase() || (v === 'set' && t.innerText === 'SETTINGS')) t.classList.add('active'); });
+    
+    // Show selected view
+    const targetView = document.getElementById('v-' + v);
+    if(targetView) targetView.style.display = 'block';
+    
+    // Update tab styling
+    const activeTab = document.querySelector(`.tab[onclick="sh('${v}')"]`);
+    if(activeTab) activeTab.classList.add('active');
+
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
 }
@@ -119,6 +132,7 @@ function saveS() {
 
 function renderStapleTags() {
     const container = document.getElementById('stapleTags');
+    if(!container) return;
     container.innerHTML = (state.staples || []).map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
 }
 
@@ -132,10 +146,10 @@ function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
 function renderI() {
     const list = document.getElementById('iList');
+    if(!list) return;
     list.innerHTML = (state.ings || []).map((i, idx) => {
         if(editingIdx === idx) {
-            return `
-            <div class="edit-card">
+            return `<div class="edit-card">
                 <label>Name</label><input type="text" id="ed-n" value="${i.Item}">
                 <div class="ing-row">
                     <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${i.Qty}"></div>
@@ -147,14 +161,10 @@ function renderI() {
                     </div>
                 </div>
                 <label>Use By</label><input type="date" id="ed-d" value="${i['Use By'] || ''}">
-                <div style="display:flex; gap:10px;">
-                    <button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button>
-                    <button class="btn btn-s" onclick="cancelEdit()">Cancel</button>
-                </div>
+                <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
             </div>`;
         }
-        return `
-        <div class="ing-item">
+        return `<div class="ing-item">
             <div><strong>${i.Item}</strong><br><small>${i.Qty}${i.Unit || ' units'} | Exp: ${fmtD(i['Use By'])}</small></div>
             <div style="display:flex; gap:5px;">
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
@@ -190,6 +200,7 @@ async function sync() {
 }
 
 async function pushAll() {
+    if(!state.su) return;
     document.getElementById('status').innerText = "Saving...";
     const payload = { action: 'pushAll', ings: state.ings, staples: state.staples, plan: state.plan };
     await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
@@ -215,20 +226,17 @@ async function generate() {
     if(!state.ak) return alert("Add API Key");
     btn.disabled = true;
     document.getElementById('pCont').innerHTML = "Chef is thinking...";
-
     const today = new Date().toLocaleDateString('en-GB');
     const prompt = `Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
     Ingredients: ${state.ings.map(i => i.Qty + (i.Unit||'units') + ' ' + i.Item).join(', ')}. Staples: ${state.staples.join(', ')}.
     RULES: 1. Lunch: MUST BE HEALTHY AND LOW CALORIE. 2. Dinner: Family meal using fridge stock. 3. Sunday: Roast. 4. Start from ${today}.`;
-
     try {
         const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
         const d = await r.json();
-        let text = d.candidates[0].content.parts[0].text.replace(/```json|
-```/gi, "").trim();
+        let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
         state.plan = JSON.parse(text);
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderP();
@@ -238,13 +246,16 @@ async function generate() {
 }
 
 function renderP() {
-    if(!state.plan || !state.plan.days) return;
-    document.getElementById('pCont').innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day} (${d.date})</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
+    const cont = document.getElementById('pCont');
+    if(!cont || !state.plan || !state.plan.days) return;
+    cont.innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day} (${d.date})</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
 }
 
+// Initial Setup
 document.getElementById('ak').value = state.ak || '';
 document.getElementById('su').value = state.su || '';
 if(state.plan) renderP();
+sh('plan'); // Explicitly show the plan view on load
 </script>
 </body>
 </html>
