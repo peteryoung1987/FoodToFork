@@ -37,11 +37,8 @@
     line-height: 1.6;
   }
 
-  h1, h2, h3, .display {
-    font-family: 'Playfair Display', serif;
-  }
+  h1, h2, h3 { font-family: 'Playfair Display', serif; }
 
-  /* HEADER */
   header {
     background: var(--ink);
     color: var(--cream);
@@ -54,21 +51,9 @@
     z-index: 100;
   }
 
-  header h1 {
-    font-size: 1.4rem;
-    font-weight: 400;
-    letter-spacing: 0.01em;
-    color: var(--cream);
-  }
+  header h1 { font-size: 1.4rem; font-weight: 400; }
+  header span { font-size: 0.75rem; color: #A8A29E; }
 
-  header span {
-    font-size: 0.75rem;
-    font-family: 'DM Sans', sans-serif;
-    color: #A8A29E;
-    font-weight: 300;
-  }
-
-  /* TABS */
   .tabs {
     background: var(--ink);
     display: flex;
@@ -77,7 +62,6 @@
   }
 
   .tab {
-    font-family: 'DM Sans', sans-serif;
     font-size: 0.8rem;
     font-weight: 500;
     letter-spacing: 0.06em;
@@ -89,427 +73,40 @@
     background: none;
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    transition: color 0.2s, border-color 0.2s;
   }
 
-  .tab.active {
-    color: var(--cream);
-    border-bottom-color: var(--accent);
-  }
+  .tab.active { color: var(--cream); border-bottom-color: var(--accent); }
 
-  /* VIEWS */
   .view { display: none; padding: 1.5rem; max-width: 760px; margin: 0 auto; }
   .view.active { display: block; }
 
-  /* SETUP VIEW */
-  .setup-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 1.25rem;
-    margin-bottom: 1rem;
+  /* CARDS & UI */
+  .setup-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+  label { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; color: var(--ink-muted); display: block; margin-bottom: 0.3rem; }
+  
+  input, select, textarea {
+    width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; background: var(--warm-white);
   }
 
-  .setup-card h2 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 0.25rem;
-  }
+  .btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500; padding: 0.6rem 1.25rem; border-radius: var(--radius-sm); border: none; cursor: pointer; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:disabled { background: var(--border-strong); cursor: not-allowed; }
+  .btn-secondary { background: var(--card); border: 1px solid var(--border-strong); }
 
-  .setup-card p {
-    font-size: 0.85rem;
-    color: var(--ink-muted);
-    margin-bottom: 1rem;
-  }
-
-  .field-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .field-row.three { grid-template-columns: 2fr 1fr 1fr; }
-
-  label {
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    display: block;
-    margin-bottom: 0.3rem;
-  }
-
-  input[type="text"], input[type="date"], input[type="number"], select, textarea {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.9rem;
-    background: var(--warm-white);
-    color: var(--ink);
-    transition: border-color 0.2s;
-  }
-
-  input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-  }
-
-  textarea { resize: vertical; min-height: 70px; }
-
-  /* INGREDIENT LIST */
-  .ingredient-list { margin-top: 1rem; }
-
-  .ingredient-item {
-    display: flex;
-    align-items: center;
-    padding: 0.6rem 0.75rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    margin-bottom: 0.5rem;
-    background: var(--warm-white);
-    gap: 0.75rem;
-    animation: fadeIn 0.2s ease;
-  }
-
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-
-  .ingredient-item .name {
-    font-weight: 500;
-    font-size: 0.9rem;
-    flex: 1;
-  }
-
-  .badge {
-    font-size: 0.7rem;
-    font-weight: 500;
-    padding: 0.2rem 0.5rem;
-    border-radius: 20px;
-    white-space: nowrap;
-  }
-
-  .badge-fridge { background: #EFF6FF; color: #1D4ED8; }
-  .badge-freezer { background: #F0F9FF; color: #0369A1; }
-  .badge-cupboard { background: var(--amber-soft); color: var(--amber); }
-
-  .expiry-soon { color: var(--accent); font-size: 0.8rem; font-weight: 500; }
-  .expiry-ok { color: var(--ink-muted); font-size: 0.8rem; }
-
-  .remove-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--ink-muted);
-    font-size: 1rem;
-    padding: 0.2rem;
-    line-height: 1;
-    transition: color 0.2s;
-  }
-  .remove-btn:hover { color: var(--accent); }
-
-  /* BUTTONS */
-  .btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 500;
-    padding: 0.6rem 1.25rem;
-    border-radius: var(--radius-sm);
-    border: none;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.02em;
-  }
-
-  .btn-primary {
-    background: var(--accent);
-    color: white;
-  }
-  .btn-primary:hover { background: #9A3412; }
-  .btn-primary:disabled { background: #D4CEC7; color: var(--ink-muted); cursor: not-allowed; }
-
-  .btn-secondary {
-    background: var(--card);
-    color: var(--ink);
-    border: 1px solid var(--border-strong);
-  }
-  .btn-secondary:hover { background: var(--cream); }
-
-  .btn-ghost {
-    background: none;
-    color: var(--ink-muted);
-    border: 1px solid var(--border);
-  }
-  .btn-ghost:hover { background: var(--cream); color: var(--ink); }
-
-  .btn-full { width: 100%; text-align: center; padding: 0.75rem; }
-
-  /* PLAN VIEW */
-  .week-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-  }
-
-  .week-header h2 { font-size: 1.5rem; font-weight: 400; }
-
-  .alerts {
-    background: #FFF7ED;
-    border: 1px solid var(--accent-border);
-    border-radius: var(--radius-sm);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-    color: var(--accent);
-  }
-
-  .alerts strong { display: block; font-weight: 500; margin-bottom: 0.25rem; }
-
-  .day-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 1rem;
-    overflow: hidden;
-    animation: fadeIn 0.3s ease;
-  }
-
-  .day-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1.25rem;
-    background: var(--ink);
-    color: var(--cream);
-  }
-
-  .day-header .day-name {
-    font-family: 'Playfair Display', serif;
-    font-size: 1rem;
-    font-weight: 400;
-  }
-
-  .day-header .day-date {
-    font-size: 0.75rem;
-    color: #A8A29E;
-  }
-
-  .day-header .day-actions { display: flex; gap: 0.5rem; }
-
-  .day-action-btn {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    padding: 0.25rem 0.6rem;
-    border-radius: 20px;
-    border: 1px solid #44403C;
-    background: none;
-    color: #A8A29E;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-family: 'DM Sans', sans-serif;
-  }
-  .day-action-btn:hover { border-color: #78716C; color: var(--cream); }
-  .day-action-btn.meal-out { border-color: var(--accent); color: #FDBA99; }
-
-  .meal-row {
-    padding: 0.9rem 1.25rem;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-  }
-  .meal-row:last-child { border-bottom: none; }
-
-  .meal-type-label {
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    min-width: 60px;
-    padding-top: 0.1rem;
-  }
-
-  .meal-content { flex: 1; }
-
-  .meal-name {
-    font-weight: 500;
-    font-size: 0.95rem;
-    margin-bottom: 0.15rem;
-  }
-
-  .meal-desc {
-    font-size: 0.82rem;
-    color: var(--ink-muted);
-    line-height: 1.5;
-  }
-
-  .meal-actions { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
-
-  .meal-btn {
-    font-size: 0.72rem;
-    font-weight: 500;
-    padding: 0.25rem 0.6rem;
-    border-radius: 20px;
-    border: 1px solid var(--border-strong);
-    background: var(--cream);
-    color: var(--ink-soft);
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-  }
-  .meal-btn:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
-  .meal-btn.recipe-btn { border-color: var(--accent-border); color: var(--accent); background: var(--accent-soft); }
-  .meal-btn.recipe-btn:hover { background: var(--accent); color: white; }
-
-  .meal-out-banner {
-    padding: 1rem 1.25rem;
-    text-align: center;
-    color: var(--ink-muted);
-    font-size: 0.9rem;
-    font-style: italic;
-  }
-
-  /* MODAL */
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(28,25,23,0.7);
-    z-index: 200;
-    align-items: flex-end;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-
-  .modal {
-    background: var(--warm-white);
-    border-radius: var(--radius) var(--radius) 0 0;
-    width: 100%;
-    max-width: 760px;
-    max-height: 85vh;
-    overflow-y: auto;
-    padding: 1.5rem;
-    animation: slideUp 0.3s ease;
-  }
-
-  @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-  .modal-handle {
-    width: 40px;
-    height: 4px;
-    background: var(--border-strong);
-    border-radius: 2px;
-    margin: 0 auto 1.25rem;
-  }
-
-  .modal h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 0.25rem; }
-  .modal .modal-subtitle { color: var(--ink-muted); font-size: 0.85rem; margin-bottom: 1.25rem; }
-
-  .recipe-section { margin-bottom: 1.25rem; }
-  .recipe-section h3 { font-size: 0.75rem; font-weight: 500; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
-
-  .recipe-section ul, .recipe-section ol { padding-left: 1.25rem; }
-  .recipe-section li { font-size: 0.9rem; line-height: 1.7; color: var(--ink-soft); }
-  .recipe-section p { font-size: 0.9rem; line-height: 1.7; color: var(--ink-soft); }
-
-  .spice-toggle {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-  .spice-btn {
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.3rem 0.75rem;
-    border-radius: 20px;
-    border: 1px solid var(--border-strong);
-    background: var(--cream);
-    color: var(--ink-muted);
-    cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all 0.2s;
-  }
-  .spice-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-  /* LOADING */
-  .loading {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--ink-muted);
-  }
-  .loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 2px solid var(--border-strong);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-    margin: 0 auto 1rem;
-  }
+  .day-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
+  .day-header { display: flex; justify-content: space-between; padding: 0.75rem 1.25rem; background: var(--ink); color: var(--cream); }
+  .meal-row { padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; gap: 1rem; }
+  .meal-type-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; color: var(--ink-muted); min-width: 65px; }
+  
+  .loading { text-align: center; padding: 3rem; }
+  .spinner { width: 30px; height: 30px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading p { font-size: 0.9rem; font-style: italic; }
 
-  /* EMPTY STATE */
-  .empty-state {
-    text-align: center;
-    padding: 3rem 1rem;
-    color: var(--ink-muted);
-  }
-  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
-  .empty-state h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; color: var(--ink-soft); margin-bottom: 0.5rem; }
-  .empty-state p { font-size: 0.85rem; max-width: 280px; margin: 0 auto 1.25rem; }
-
-  /* SHEET CONFIG */
-  .sheet-config {
-    background: var(--amber-soft);
-    border: 1px solid #FDE68A;
-    border-radius: var(--radius-sm);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.85rem;
-    color: var(--amber);
-  }
-  .sheet-config a { color: var(--amber); font-weight: 500; }
-
-  /* SETTINGS VIEW */
-  .settings-field { margin-bottom: 1rem; }
-
-  .tag-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
-  .tag {
-    font-size: 0.75rem;
-    padding: 0.2rem 0.6rem;
-    background: var(--cream);
-    border: 1px solid var(--border-strong);
-    border-radius: 20px;
-    color: var(--ink-soft);
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-  }
-  .tag button { background: none; border: none; cursor: pointer; color: var(--ink-muted); font-size: 0.8rem; line-height: 1; }
-
-  .section-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 400;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .expiry-warning { color: var(--accent) !important; }
-  .expiry-critical { color: #DC2626 !important; font-weight: 500; }
-
-  @media (max-width: 480px) {
-    .field-row { grid-template-columns: 1fr; }
-    .field-row.three { grid-template-columns: 1fr 1fr; }
-    header h1 { font-size: 1.1rem; }
-  }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--warm-white); border-radius: var(--radius); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; padding: 2rem; position: relative; }
 </style>
 </head>
 <body>
@@ -525,828 +122,161 @@
   <button class="tab" onclick="showView('settings')">Settings</button>
 </div>
 
-<!-- PLAN VIEW -->
 <div id="view-plan" class="view active">
-  <div id="sheetWarning" class="sheet-config" style="display:none">
-    ⚠️ No Google Sheet connected. <a href="#" onclick="showView('settings'); return false;">Add your sheet URL in Settings</a> to sync ingredients.
-  </div>
-
-  <div id="alertsBanner" style="display:none" class="alerts">
-    <strong>⚠️ Use these up this week</strong>
-    <span id="alertsList"></span>
-  </div>
-
-  <div class="week-header">
-    <h2>Week Plan</h2>
+  <div class="week-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2>Meal Plan</h2>
     <button class="btn btn-primary" id="generateBtn" onclick="generatePlan()">Generate Week</button>
   </div>
-
-  <div id="planContent">
-    <div class="empty-state">
-      <div class="icon">🍽️</div>
-      <h3>No plan yet</h3>
-      <p>Add your ingredients, then hit Generate Week to get your meal plan.</p>
-      <button class="btn btn-secondary" onclick="showView('ingredients')">Add Ingredients</button>
-    </div>
-  </div>
+  <div id="planContent"></div>
 </div>
 
-<!-- INGREDIENTS VIEW -->
 <div id="view-ingredients" class="view">
   <div class="setup-card">
     <h2>Add Ingredient</h2>
-    <p>Track what's in your fridge, freezer, and cupboards.</p>
-
-    <div class="field-row three">
-      <div>
-        <label>Item name</label>
-        <input type="text" id="iName" placeholder="e.g. Salmon fillets" />
-      </div>
-      <div>
-        <label>Qty</label>
-        <input type="number" id="iQty" placeholder="2" min="1" />
-      </div>
-      <div>
-        <label>Storage</label>
-        <select id="iStorage">
-          <option value="fridge">Fridge</option>
-          <option value="freezer">Freezer</option>
-          <option value="cupboard">Cupboard</option>
-        </select>
-      </div>
-    </div>
-
     <div class="field-row">
-      <div>
-        <label>Category</label>
-        <select id="iCategory">
-          <option value="protein-meat">Protein — Meat</option>
-          <option value="protein-fish">Protein — Fish</option>
-          <option value="protein-dairy">Protein — Dairy/Egg</option>
-          <option value="veg">Veg</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div>
-        <label>Use by / Best before</label>
-        <input type="date" id="iDate" />
-      </div>
+      <input type="text" id="iName" placeholder="Item name (e.g. Salmon)" />
+      <input type="date" id="iDate" />
     </div>
-
-    <div style="display:flex; gap:0.75rem; align-items:center;">
-      <button class="btn btn-primary" onclick="addIngredient()">Add item</button>
-      <button class="btn btn-ghost" onclick="loadFromSheet()">↓ Load from sheet</button>
-    </div>
-  </div>
-
-  <div id="ingredientsList">
-    <div class="empty-state" style="padding: 2rem 1rem;">
-      <div class="icon">🥦</div>
-      <h3>Nothing added yet</h3>
-      <p>Add ingredients above, or load from your Google Sheet.</p>
-    </div>
-  </div>
-</div>
-
-<!-- SETTINGS VIEW -->
-<div id="view-settings" class="view">
-  <div class="setup-card">
-    <h2>Google Sheet</h2>
-    <p>Connect your ingredient spreadsheet. Set sharing to "Anyone with the link can edit".</p>
-    <div class="settings-field">
-      <label>Sheet URL</label>
-      <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..." />
-    </div>
-    <button class="btn btn-primary" onclick="saveSheetUrl()">Save &amp; Test</button>
-    <span id="sheetTestResult" style="margin-left:0.75rem; font-size:0.85rem;"></span>
-    <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
-      <p style="font-size:0.85rem;color:var(--ink-muted);margin-bottom:0.75rem;">To sync ingredients back to your sheet, you need a Google Apps Script. <a href="#" onclick="document.getElementById('scriptInstructions').style.display='block'; return false;" style="color:var(--accent);">Show me how →</a></p>
-      <label>Apps Script URL (enables write-back)</label>
-      <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/..." />
-      <button class="btn btn-secondary" style="margin-top:0.5rem;" onclick="saveScriptUrl()">Save script URL</button>
-      <span id="scriptSaveResult" style="margin-left:0.75rem; font-size:0.85rem;"></span>
-    </div>
-  </div>
-
-  <div class="setup-card" id="scriptInstructions" style="display:none; border-color: var(--accent-border); background: var(--accent-soft);">
-    <h2 style="font-size:1rem;">Setting up sheet write-back</h2>
-    <p style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:0.75rem;">Follow these steps once — takes about 3 minutes:</p>
-    <ol style="font-size:0.82rem; color:var(--ink-soft); padding-left:1.25rem; line-height:2;">
-      <li>Open your Google Sheet</li>
-      <li>Click <strong>Extensions → Apps Script</strong></li>
-      <li>Delete any existing code and paste the script below</li>
-      <li>Click <strong>Deploy → New deployment</strong></li>
-      <li>Type: <strong>Web app</strong>, Execute as: <strong>Me</strong>, Who has access: <strong>Anyone</strong></li>
-      <li>Click Deploy, copy the URL and paste it above</li>
-    </ol>
-    <div style="background:var(--ink);color:#F5F0EB;padding:0.75rem;border-radius:var(--radius-sm);font-family:monospace;font-size:0.72rem;margin-top:0.75rem;white-space:pre-wrap;line-height:1.6;overflow-x:auto;">function doPost(e) {
-  const data = JSON.parse(e.postData.contents);
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (data.action === 'writeIngredients') {
-    const sheet = ss.getSheetByName('Ingredients') || ss.getActiveSheet();
-    const headers = ['Item','Qty','Storage','Category','Use By','Used'];
-    sheet.clearContents();
-    sheet.getRange(1,1,1,headers.length).setValues([headers]);
-    if (data.rows.length > 0) {
-      sheet.getRange(2,1,data.rows.length,headers.length).setValues(data.rows);
-    }
-  }
-  return ContentService.createTextOutput(JSON.stringify({ok:true}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({ok:true}))
-    .setMimeType(ContentService.MimeType.JSON);
-}</div>
-    <button class="btn btn-ghost" style="margin-top:0.75rem; font-size:0.8rem;" onclick="document.getElementById('scriptInstructions').style.display='none'">Close instructions</button>
-  </div>
-
-  <div class="setup-card">
-    <h2>Gemini API Key</h2>
-    <p>Get a free key from <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> → Get API Key.</p>
-    <div class="settings-field">
-      <label>API Key</label>
-      <input type="password" id="apiKey" placeholder="AIza..." />
-    </div>
-    <button class="btn btn-primary" onclick="saveApiKey()">Save key</button>
-    <span id="apiTestResult" style="margin-left:0.75rem; font-size:0.85rem;"></span>
-  </div>
-
-  <div class="setup-card">
-    <h2>Family profile</h2>
-    <p>Helps the AI tailor meals to your household.</p>
-    <div class="settings-field">
-      <label>Spice tolerance — family</label>
-      <select id="familySpice">
-        <option value="mild">Mild (keep it safe for the wee one)</option>
-        <option value="medium" selected>Medium (some flavour, nowt too wild)</option>
+    <div class="field-row" style="grid-template-columns: 1fr 1fr 1fr;">
+      <input type="number" id="iQty" placeholder="Qty" />
+      <select id="iStorage">
+        <option value="fridge">Fridge</option>
+        <option value="freezer">Freezer</option>
+        <option value="cupboard">Cupboard</option>
       </select>
+      <button class="btn btn-primary" onclick="addIngredient()">Add</button>
     </div>
-    <div class="settings-field">
-      <label>Notes / preferences</label>
-      <textarea id="familyNotes" placeholder="e.g. daughter won't eat mushrooms, wife is pescatarian on Mondays..."></textarea>
-    </div>
-    <button class="btn btn-primary" onclick="saveSettings()">Save settings</button>
+    <button class="btn btn-secondary" onclick="loadFromSheet()" style="width:100%; margin-top:0.5rem;">↓ Sync from Google Sheet</button>
   </div>
-
-  <div class="setup-card">
-    <h2>Cupboard staples</h2>
-    <p>These are assumed always available — AI won't ask about them.</p>
-    <div id="staplesList" class="tag-list" style="margin-bottom:0.75rem;"></div>
-    <div style="display:flex; gap:0.5rem;">
-      <input type="text" id="newStaple" placeholder="Add a staple..." style="flex:1;" onkeydown="if(event.key==='Enter')addStaple()" />
-      <button class="btn btn-secondary" onclick="addStaple()">Add</button>
-    </div>
-  </div>
+  <div id="ingredientsList"></div>
 </div>
 
-<!-- RECIPE MODAL -->
-<div class="modal-overlay" id="recipeModal" onclick="closeModal(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div id="modalContent">
-      <div class="loading"><div class="spinner"></div><p>Fetching recipe...</p></div>
+<div id="view-settings" class="view">
+    <div class="setup-card">
+        <h2>API & Sheets</h2>
+        <label>Gemini API Key</label>
+        <input type="password" id="apiKey" style="margin-bottom:1rem;" />
+        <label>Google Sheet CSV URL</label>
+        <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../export?format=csv" />
+        <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:1rem;">Save Settings</button>
     </div>
-  </div>
 </div>
 
-<!-- SWAP MODAL -->
-<div class="modal-overlay" id="swapModal" onclick="closeModal(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div id="swapContent">
-      <div class="loading"><div class="spinner"></div><p>Finding alternatives...</p></div>
-    </div>
-  </div>
+<div class="modal-overlay" id="modal" onclick="if(event.target === this) this.classList.remove('open')">
+    <div class="modal" id="modalContent"></div>
 </div>
 
 <script>
-// ─── STATE ───────────────────────────────────────────────────
-let state = {
+let state = JSON.parse(localStorage.getItem('ftf_state')) || {
   ingredients: [],
   plan: null,
-  settings: {
-    sheetUrl: '',
-    apiKey: '',
-    familySpice: 'medium',
-    familyNotes: '',
-    staples: ['pasta','rice','noodles','lentils','tinned tomatoes','tinned chickpeas','olive oil','butter','eggs','flour','bread','onions','garlic','potatoes','salt','pepper','cumin','paprika','oregano','thyme','rosemary','chilli flakes','soy sauce','stock cubes','mustard','honey','lemon','lime','vinegar','sugar']
-  }
+  settings: { apiKey: '', sheetUrl: '', staples: ['salt', 'pepper', 'oil', 'eggs', 'pasta', 'rice'] }
 };
 
-// ─── PERSIST ─────────────────────────────────────────────────
-function save() { localStorage.setItem('ftf_state', JSON.stringify(state)); }
-function load() {
-  const d = localStorage.getItem('ftf_state');
-  if (d) {
-    const parsed = JSON.parse(d);
-    state = { ...state, ...parsed };
-    if (!state.settings.staples) state.settings.staples = [];
-  }
+function save() { 
+    localStorage.setItem('ftf_state', JSON.stringify(state));
+    updateSheetStatus();
 }
 
-// ─── INIT ────────────────────────────────────────────────────
-load();
-document.getElementById('sheetUrl').value = state.settings.sheetUrl || '';
-document.getElementById('apiKey').value = state.settings.apiKey || '';
-document.getElementById('scriptUrl').value = state.settings.scriptUrl || '';
-document.getElementById('familySpice').value = state.settings.familySpice || 'medium';
-document.getElementById('familyNotes').value = state.settings.familyNotes || '';
+function updateSheetStatus() {
+    document.getElementById('sheetStatus').textContent = state.settings.sheetUrl ? "Sheet Linked" : "No Sheet";
+}
 
-// Set default date to today
-const today = new Date();
-document.getElementById('iDate').value = today.toISOString().split('T')[0];
-
-renderIngredients();
-renderPlan();
-renderStaples();
-updateSheetStatus();
-checkAlerts();
-
-// ─── VIEWS ───────────────────────────────────────────────────
 function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  document.querySelectorAll('.tab')[['plan','ingredients','settings'].indexOf(name)].classList.add('active');
+  const idx = ['plan', 'ingredients', 'settings'].indexOf(name);
+  document.querySelectorAll('.tab')[idx].classList.add('active');
+  if(name === 'ingredients') renderIngredients();
 }
 
-// ─── SHEET ───────────────────────────────────────────────────
-function extractSheetId(url) {
-  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-  return m ? m[1] : null;
-}
-
-function updateSheetStatus() {
-  const el = document.getElementById('sheetStatus');
-  const warn = document.getElementById('sheetWarning');
-  if (state.settings.sheetUrl && extractSheetId(state.settings.sheetUrl)) {
-    el.textContent = 'Sheet connected';
-    el.style.color = '#86EFAC';
-    if (warn) warn.style.display = 'none';
-  } else {
-    el.textContent = 'No sheet connected';
-    el.style.color = '#A8A29E';
-    if (warn) warn.style.display = 'block';
-  }
-}
-
-async function saveSheetUrl() {
-  const url = document.getElementById('sheetUrl').value.trim();
-  const result = document.getElementById('sheetTestResult');
-  const id = extractSheetId(url);
-  if (!id) { result.textContent = '✗ Invalid URL'; result.style.color = 'var(--accent)'; return; }
-  result.textContent = 'Testing...'; result.style.color = 'var(--ink-muted)';
-  try {
-    const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
-    const res = await fetch(csvUrl);
-    if (res.ok) {
-      state.settings.sheetUrl = url;
-      save();
-      updateSheetStatus();
-      result.textContent = '✓ Connected!'; result.style.color = 'var(--green)';
-    } else {
-      result.textContent = `✗ Error ${res.status} — check sharing settings`; result.style.color = 'var(--accent)';
-    }
-  } catch(e) {
-    result.textContent = '✗ Network error'; result.style.color = 'var(--accent)';
-  }
-}
-
-async function loadFromSheet() {
-  const id = extractSheetId(state.settings.sheetUrl);
-  if (!id) { alert('Please add your sheet URL in Settings first.'); showView('settings'); return; }
-  try {
-    const res = await fetch(`https://docs.google.com/spreadsheets/d/${id}/export?format=csv`);
-    if (!res.ok) { alert('Could not load sheet. Check sharing settings.'); return; }
-    const text = await res.text();
-    const rows = text.trim().split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-    if (rows.length < 2) { alert('Sheet looks empty — add some ingredients first.'); return; }
-    const header = rows[0].map(h => h.toLowerCase());
-    const nameIdx = header.findIndex(h => h.includes('item') || h.includes('name'));
-    const qtyIdx = header.findIndex(h => h.includes('qty') || h.includes('quant'));
-    const storageIdx = header.findIndex(h => h.includes('storage'));
-    const catIdx = header.findIndex(h => h.includes('cat'));
-    const dateIdx = header.findIndex(h => h.includes('use') || h.includes('date') || h.includes('expir') || h.includes('best'));
-    const usedIdx = header.findIndex(h => h.includes('used'));
-
-    let added = 0;
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row[nameIdx] || row[nameIdx] === '') continue;
-      if (usedIdx >= 0 && row[usedIdx] && row[usedIdx].toLowerCase() === 'yes') continue;
-      const existing = state.ingredients.findIndex(ing => ing.name.toLowerCase() === row[nameIdx].toLowerCase());
-      const ing = {
-        id: existing >= 0 ? state.ingredients[existing].id : Date.now() + i,
-        name: nameIdx >= 0 ? row[nameIdx] : 'Unknown',
-        qty: qtyIdx >= 0 ? (parseInt(row[qtyIdx]) || 1) : 1,
-        storage: storageIdx >= 0 ? (row[storageIdx].toLowerCase() || 'fridge') : 'fridge',
-        category: catIdx >= 0 ? row[catIdx] : 'other',
-        useBy: dateIdx >= 0 ? parseDate(row[dateIdx]) : '',
-        used: false
-      };
-      if (existing >= 0) state.ingredients[existing] = ing;
-      else { state.ingredients.push(ing); added++; }
-    }
+function addIngredient() {
+    const name = document.getElementById('iName').value;
+    const date = document.getElementById('iDate').value;
+    if(!name) return;
+    state.ingredients.push({ name, useBy: date, storage: document.getElementById('iStorage').value, qty: document.getElementById('iQty').value || 1, id: Date.now() });
     save();
     renderIngredients();
-    checkAlerts();
-    alert(`Loaded from sheet! ${added} new item(s) added.`);
-  } catch(e) {
-    alert('Error loading sheet: ' + e.message);
-  }
-}
-
-function parseDate(str) {
-  if (!str) return '';
-  const parts = str.split('/');
-  if (parts.length === 3) {
-    if (parts[2].length === 4) return `${parts[2]}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
-    return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
-  }
-  return str;
-}
-
-async function writeBackToSheet() {
-  const scriptUrl = state.settings.scriptUrl;
-  if (!scriptUrl) return;
-  const rows = state.ingredients.map(i => [i.name, i.qty, i.storage, i.category, i.useBy || '', i.used ? 'Yes' : 'No']);
-  try {
-    await fetch(scriptUrl, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'writeIngredients', rows })
-    });
-  } catch(e) {
-    console.warn('Sheet write-back failed:', e);
-  }
-}
-
-// ─── INGREDIENTS ─────────────────────────────────────────────
-function addIngredient() {
-  const name = document.getElementById('iName').value.trim();
-  if (!name) { document.getElementById('iName').focus(); return; }
-  const ing = {
-    id: Date.now(),
-    name,
-    qty: parseInt(document.getElementById('iQty').value) || 1,
-    storage: document.getElementById('iStorage').value,
-    category: document.getElementById('iCategory').value,
-    useBy: document.getElementById('iDate').value,
-    used: false
-  };
-  state.ingredients.push(ing);
-  save();
-  renderIngredients();
-  checkAlerts();
-  writeBackToSheet();
-  document.getElementById('iName').value = '';
-  document.getElementById('iQty').value = '';
-  document.getElementById('iName').focus();
-}
-
-function removeIngredient(id) {
-  state.ingredients = state.ingredients.filter(i => i.id !== id);
-  save();
-  renderIngredients();
-  checkAlerts();
-  writeBackToSheet();
-}
-
-function daysUntil(dateStr) {
-  if (!dateStr) return null;
-  const diff = new Date(dateStr) - new Date();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
 function renderIngredients() {
-  const el = document.getElementById('ingredientsList');
-  const active = state.ingredients.filter(i => !i.used);
-  if (active.length === 0) {
-    el.innerHTML = `<div class="empty-state" style="padding:2rem 1rem"><div class="icon">🥦</div><h3>Nothing added yet</h3><p>Add ingredients above, or load from your Google Sheet.</p></div>`;
-    return;
-  }
-  const sorted = [...active].sort((a, b) => {
-    const da = daysUntil(a.useBy), db = daysUntil(b.useBy);
-    if (da === null && db === null) return 0;
-    if (da === null) return 1;
-    if (db === null) return -1;
-    return da - db;
-  });
-  el.innerHTML = sorted.map(i => {
-    const days = daysUntil(i.useBy);
-    let expiryHtml = '';
-    if (days !== null) {
-      if (days < 0) expiryHtml = `<span class="expiry-critical">Expired!</span>`;
-      else if (days === 0) expiryHtml = `<span class="expiry-warning">Use today</span>`;
-      else if (days <= 3) expiryHtml = `<span class="expiry-warning">${days}d left</span>`;
-      else expiryHtml = `<span class="expiry-ok">${days}d</span>`;
-    }
-    const badgeClass = i.storage === 'fridge' ? 'badge-fridge' : i.storage === 'freezer' ? 'badge-freezer' : 'badge-cupboard';
-    return `<div class="ingredient-item">
-      <div class="name">${i.name} <span style="color:var(--ink-muted);font-weight:300;">×${i.qty}</span></div>
-      <span class="badge ${badgeClass}">${i.storage}</span>
-      ${expiryHtml}
-      <button class="remove-btn" onclick="removeIngredient(${i.id})" title="Remove">✕</button>
-    </div>`;
-  }).join('');
+    const list = document.getElementById('ingredientsList');
+    const sorted = [...state.ingredients].sort((a,b) => new Date(a.useBy) - new Date(b.useBy));
+    list.innerHTML = sorted.map(i => `
+        <div class="setup-card" style="display:flex; justify-content:space-between; align-items:center; padding: 0.75rem 1rem;">
+            <div><strong>${i.name}</strong> <small>(${i.storage})</small><br><span style="font-size:0.8rem; color:var(--accent);">${i.useBy || 'No date'}</span></div>
+            <button class="btn" onclick="removeIng(${i.id})">✕</button>
+        </div>
+    `).join('');
 }
 
-// ─── ALERTS ──────────────────────────────────────────────────
-function checkAlerts() {
-  const urgent = state.ingredients.filter(i => !i.used && daysUntil(i.useBy) !== null && daysUntil(i.useBy) <= 7 && daysUntil(i.useBy) >= 0);
-  const banner = document.getElementById('alertsBanner');
-  const list = document.getElementById('alertsList');
-  if (urgent.length > 0) {
-    banner.style.display = 'block';
-    list.textContent = urgent.map(i => `${i.name} (${daysUntil(i.useBy)}d)`).join(', ');
-  } else {
-    banner.style.display = 'none';
-  }
-}
-
-// ─── SETTINGS ────────────────────────────────────────────────
-function saveScriptUrl() {
-  state.settings.scriptUrl = document.getElementById('scriptUrl').value.trim();
-  save();
-  const el = document.getElementById('scriptSaveResult');
-  el.textContent = '\u2713 Saved'; el.style.color = 'var(--green)';
-}
-
-function saveApiKey() {
-  state.settings.apiKey = document.getElementById('apiKey').value.trim();
-  save();
-  document.getElementById('apiTestResult').textContent = '✓ Saved';
-  document.getElementById('apiTestResult').style.color = 'var(--green)';
+function removeIng(id) {
+    state.ingredients = state.ingredients.filter(i => i.id !== id);
+    save();
+    renderIngredients();
 }
 
 function saveSettings() {
-  state.settings.familySpice = document.getElementById('familySpice').value;
-  state.settings.familyNotes = document.getElementById('familyNotes').value;
-  save();
-  alert('Settings saved!');
-}
-
-function renderStaples() {
-  const el = document.getElementById('staplesList');
-  el.innerHTML = state.settings.staples.map((s,i) => `<span class="tag">${s}<button onclick="removeStaple(${i})">✕</button></span>`).join('');
-}
-
-function addStaple() {
-  const val = document.getElementById('newStaple').value.trim();
-  if (!val) return;
-  state.settings.staples.push(val.toLowerCase());
-  save();
-  renderStaples();
-  document.getElementById('newStaple').value = '';
-}
-
-function removeStaple(idx) {
-  state.settings.staples.splice(idx, 1);
-  save();
-  renderStaples();
-}
-
-// ─── PLAN GENERATION ─────────────────────────────────────────
-async function generatePlan() {
-  if (!state.settings.apiKey) {
-    alert('Please add your Gemini API key in Settings first.');
-    showView('settings');
-    return;
-  }
-  const active = state.ingredients.filter(i => !i.used);
-  if (active.length === 0) {
-    alert('Add some ingredients first!');
-    showView('ingredients');
-    return;
-  }
-
-  document.getElementById('planContent').innerHTML = `<div class="loading"><div class="spinner"></div><p>Planning your week...</p></div>`;
-  document.getElementById('generateBtn').disabled = true;
-
-  const urgentItems = active.filter(i => daysUntil(i.useBy) !== null && daysUntil(i.useBy) <= 7);
-  const nonUrgentItems = active.filter(i => daysUntil(i.useBy) === null || daysUntil(i.useBy) > 7);
-
-  const prompt = `You are a meal planner for a Yorkshire family. Plan 7 days of meals.
-
-HOUSEHOLD:
-- Pete (solo lunch): healthy, eating clean, likes protein-focused assembly meals (cottage cheese, prawns, eggs, salad bowls). No cooking required for lunch — assembly only.
-- Family dinner: Pete, his wife, and a 9-year-old daughter. Think Hello Fresh / Sorted Food style. Proper cooked meals.
-- Sunday: always a traditional roast lunch. Note any leftovers that could be used in the week. Solo meal on Sunday is a big salad for dinner.
-- Spice level: ${state.settings.familySpice}. Pete and wife can handle more heat — if a dish is spicy, suggest how to dial it up for the adults.
-- Notes: ${state.settings.familyNotes || 'none'}
-
-INGREDIENTS THAT MUST BE USED THIS WEEK (going off):
-${urgentItems.length > 0 ? urgentItems.map(i => `- ${i.name} (×${i.qty}, ${i.storage}, use by: ${i.useBy})`).join('\n') : 'None urgent this week'}
-
-OPTIONAL INGREDIENTS (can be used or left):
-${nonUrgentItems.map(i => `- ${i.name} (×${i.qty}, ${i.storage}${i.useBy ? ', best before: '+i.useBy : ''})`).join('\n')}
-
-CUPBOARD STAPLES (assume unlimited): ${state.settings.staples.join(', ')}
-
-RULES:
-1. Urgent items MUST appear in at least one meal this week
-2. Solo lunch = assembly only, protein + salad/bowl format
-3. Family dinner = proper cooked meal, recipe-worthy
-4. Sunday lunch is always a roast — pick a protein from available ingredients
-5. Keep it varied — no protein twice in a row if possible
-6. If you need an ingredient you're unsure about, flag it with "CHECK: do you have X?"
-
-Respond ONLY with valid JSON in this exact format:
-{
-  "days": [
-    {
-      "day": "Monday",
-      "date": "2026-05-04",
-      "soloMeal": {
-        "name": "Meal name",
-        "description": "Brief description",
-        "ingredientsUsed": ["ingredient1"]
-      },
-      "familyMeal": {
-        "name": "Meal name", 
-        "description": "Brief description",
-        "ingredientsUsed": ["ingredient1"],
-        "checks": ["do you have X?"]
-      }
-    }
-  ],
-  "alerts": ["Any urgent notes about ingredients going off"],
-  "leftovers": "Any leftover notes from the roast"
-}`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.settings.apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 4000 }, thinkingConfig: { thinkingLevel: "minimal" }
-      })
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || 'API error');
-    }
-
-    const data = await res.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const plan = JSON.parse(text);
-    state.plan = plan;
+    state.settings.apiKey = document.getElementById('apiKey').value;
+    state.settings.sheetUrl = document.getElementById('sheetUrl').value;
     save();
-    renderPlan();
-    checkAlerts();
-  } catch(e) {
-    document.getElementById('planContent').innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h3>Something went wrong</h3><p>${e.message}</p><button class="btn btn-secondary" onclick="generatePlan()">Try again</button></div>`;
-  }
-
-  document.getElementById('generateBtn').disabled = false;
+    alert("Settings saved, mate.");
 }
 
-// ─── RENDER PLAN ─────────────────────────────────────────────
+async function generatePlan() {
+    if(!state.settings.apiKey) return alert("Need an API key first!");
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    document.getElementById('planContent').innerHTML = `<div class="loading"><div class="spinner"></div><p>Asking Gemini to sort the week out...</p></div>`;
+
+    const prompt = `Plan 7 days of meals for Pete (Yorkshire lad, clean eating). 
+    Solo Lunch: Assembly only, no cooking (e.g., prawns, cottage cheese, salads). 
+    Family Dinner: Proper cooked meal for Pete, Wife, and 9yo daughter (mild-medium spice). 
+    Sunday: Roast lunch (mandatory). 
+    Use these ingredients (prioritize expiring soon): ${state.ingredients.map(i => i.name + ' exp: ' + i.useBy).join(', ')}. 
+    Staples available: ${state.settings.staples.join(', ')}.
+    Return ONLY JSON: {"days": [{"day": "Monday", "lunch": "description", "dinner": "description", "ingredients": []}]}`;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.settings.apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await response.json();
+        const rawText = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '');
+        state.plan = JSON.parse(rawText);
+        save();
+        renderPlan();
+    } catch (e) {
+        document.getElementById('planContent').innerHTML = `<p>Bloody hell, it broke: ${e.message}</p>`;
+    }
+    btn.disabled = false;
+}
+
 function renderPlan() {
-  const el = document.getElementById('planContent');
-  if (!state.plan) return;
-
-  const days = state.plan.days || [];
-  if (days.length === 0) { el.innerHTML = '<p style="color:var(--ink-muted);padding:2rem;text-align:center;">No plan data. Try regenerating.</p>'; return; }
-
-  let html = '';
-
-  if (state.plan.leftovers) {
-    html += `<div class="alerts" style="background:var(--green-soft);border-color:#86EFAC;color:var(--green)"><strong>🍗 Roast leftovers</strong>${state.plan.leftovers}</div>`;
-  }
-
-  days.forEach((day, di) => {
-    if (day.mealOut) {
-      html += `<div class="day-card">
-        <div class="day-header">
-          <span class="day-name">${day.day}</span>
-          <span class="day-date">${formatDate(day.date)}</span>
-          <div class="day-actions">
-            <button class="day-action-btn" onclick="toggleMealOut(${di})">↩ Back</button>
-          </div>
+    if(!state.plan) return;
+    document.getElementById('planContent').innerHTML = state.plan.days.map((d, idx) => `
+        <div class="day-card">
+            <div class="day-header"><span>${d.day}</span></div>
+            <div class="meal-row">
+                <div class="meal-type-label">Lunch</div>
+                <div><strong>${d.lunch}</strong></div>
+            </div>
+            <div class="meal-row">
+                <div class="meal-type-label">Dinner</div>
+                <div><strong>${d.dinner}</strong></div>
+            </div>
         </div>
-        <div class="meal-out-banner">🍽️ Meal out tonight — enjoy!</div>
-      </div>`;
-      return;
-    }
-
-    const checks = [...(day.soloMeal?.checks || []), ...(day.familyMeal?.checks || [])];
-    html += `<div class="day-card">
-      <div class="day-header">
-        <span class="day-name">${day.day}</span>
-        <span class="day-date">${formatDate(day.date)}</span>
-        <div class="day-actions">
-          <button class="day-action-btn" onclick="toggleMealOut(${di})">Meal out</button>
-        </div>
-      </div>
-      ${checks.length > 0 ? `<div style="padding:0.5rem 1.25rem;background:var(--amber-soft);font-size:0.8rem;color:var(--amber);">❓ ${checks.join(' · ')}</div>` : ''}
-      <div class="meal-row">
-        <div class="meal-type-label">Solo lunch</div>
-        <div class="meal-content">
-          <div class="meal-name">${day.soloMeal?.name || '—'}</div>
-          <div class="meal-desc">${day.soloMeal?.description || ''}</div>
-          <div class="meal-actions">
-            <button class="meal-btn recipe-btn" onclick="getRecipe(${di}, 'solo')">Get recipe</button>
-            <button class="meal-btn" onclick="swapMeal(${di}, 'solo')">Swap</button>
-          </div>
-        </div>
-      </div>
-      <div class="meal-row">
-        <div class="meal-type-label">Family dinner</div>
-        <div class="meal-content">
-          <div class="meal-name">${day.familyMeal?.name || '—'}</div>
-          <div class="meal-desc">${day.familyMeal?.description || ''}</div>
-          <div class="meal-actions">
-            <button class="meal-btn recipe-btn" onclick="getRecipe(${di}, 'family')">Get recipe</button>
-            <button class="meal-btn" onclick="swapMeal(${di}, 'family')">Swap</button>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  });
-
-  el.innerHTML = html;
+    `).join('');
 }
 
-function formatDate(str) {
-  if (!str) return '';
-  const d = new Date(str);
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-}
-
-function toggleMealOut(dayIdx) {
-  state.plan.days[dayIdx].mealOut = !state.plan.days[dayIdx].mealOut;
-  save();
-  renderPlan();
-  checkExpiryAfterMealOut();
-}
-
-function checkExpiryAfterMealOut() {
-  const mealOutDays = state.plan.days.filter(d => d.mealOut).length;
-  if (mealOutDays > 0) {
-    const urgent = state.ingredients.filter(i => !i.used && daysUntil(i.useBy) !== null && daysUntil(i.useBy) <= 7);
-    if (urgent.length > 0) {
-      const banner = document.getElementById('alertsBanner');
-      banner.style.display = 'block';
-      banner.querySelector('strong').textContent = `⚠️ Meal out flagged — check these don't go off`;
-    }
-  }
-}
-
-// ─── RECIPE ──────────────────────────────────────────────────
-async function getRecipe(dayIdx, type) {
-  const day = state.plan.days[dayIdx];
-  const meal = type === 'solo' ? day.soloMeal : day.familyMeal;
-  const isSolo = type === 'solo';
-
-  document.getElementById('recipeModal').classList.add('open');
-  document.getElementById('modalContent').innerHTML = `<div class="loading"><div class="spinner"></div><p>Writing up ${meal.name}...</p></div>`;
-
-  const prompt = `Write a ${isSolo ? 'simple assembly-style (no cooking) solo lunch' : 'proper family dinner'} recipe for: ${meal.name}
-
-Context: ${meal.description}
-Ingredients available: ${(meal.ingredientsUsed || []).join(', ')}
-Cupboard staples available: ${state.settings.staples.slice(0,15).join(', ')} and more
-${!isSolo ? `Family: Pete, wife, 9-year-old daughter. Spice: ${state.settings.familySpice}.${state.settings.familyNotes ? ' Notes: ' + state.settings.familyNotes : ''}` : 'Just for Pete — clean eating, high protein, no cooking needed.'}
-
-Respond ONLY with valid JSON:
-{
-  "name": "Recipe name",
-  "serves": "${isSolo ? '1' : '3'}",
-  "prepTime": "X mins",
-  "cookTime": "${isSolo ? '0 mins' : 'X mins'}",
-  "ingredients": ["200g salmon", "big handful rocket", ...],
-  "steps": ["Step 1...", "Step 2...", ...],
-  "spiceNote": "${!isSolo ? 'How to dial up heat for the adults (or empty string if not applicable)' : ''}",
-  "tip": "One useful tip"
-}`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.settings.apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }, thinkingConfig: { thinkingLevel: "minimal" }
-      })
-    });
-
-    const data = await res.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const recipe = JSON.parse(text);
-    renderRecipeModal(recipe, isSolo);
-  } catch(e) {
-    document.getElementById('modalContent').innerHTML = `<p style="color:var(--accent);padding:1rem;">Error getting recipe: ${e.message}</p><button class="btn btn-secondary" onclick="getRecipe(${dayIdx},'${type}')">Try again</button>`;
-  }
-}
-
-function renderRecipeModal(recipe, isSolo) {
-  document.getElementById('modalContent').innerHTML = `
-    <h2>${recipe.name}</h2>
-    <p class="modal-subtitle">${recipe.serves ? 'Serves '+recipe.serves+' · ' : ''}${recipe.prepTime || ''}${recipe.cookTime && recipe.cookTime !== '0 mins' ? ' · '+recipe.cookTime+' cook' : ''}</p>
-    ${recipe.spiceNote ? `<div class="alerts" style="background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent);margin-bottom:1rem;">🌶️ Spice it up: ${recipe.spiceNote}</div>` : ''}
-    <div class="recipe-section">
-      <h3>Ingredients</h3>
-      <ul>${(recipe.ingredients || []).map(i => `<li>${i}</li>`).join('')}</ul>
-    </div>
-    <div class="recipe-section">
-      <h3>${isSolo ? 'How to assemble' : 'Method'}</h3>
-      <ol>${(recipe.steps || []).map(s => `<li>${s}</li>`).join('')}</ol>
-    </div>
-    ${recipe.tip ? `<div class="recipe-section"><h3>Tip</h3><p>${recipe.tip}</p></div>` : ''}
-    <button class="btn btn-secondary btn-full" style="margin-top:1rem;" onclick="document.getElementById('recipeModal').classList.remove('open')">Close</button>
-  `;
-}
-
-// ─── SWAP ────────────────────────────────────────────────────
-async function swapMeal(dayIdx, type) {
-  const day = state.plan.days[dayIdx];
-  const meal = type === 'solo' ? day.soloMeal : day.familyMeal;
-  const isSolo = type === 'solo';
-
-  document.getElementById('swapModal').classList.add('open');
-  document.getElementById('swapContent').innerHTML = `<div class="loading"><div class="spinner"></div><p>Finding alternatives...</p></div>`;
-
-  const active = state.ingredients.filter(i => !i.used);
-  const prompt = `Suggest 3 alternative ${isSolo ? 'solo lunch assembly' : 'family dinner'} meals to replace "${meal.name}" on ${day.day}.
-Available ingredients: ${active.map(i => i.name).join(', ')}
-Staples: ${state.settings.staples.slice(0,10).join(', ')}
-${!isSolo ? `Family: Pete, wife, 9yo daughter. Spice: ${state.settings.familySpice}.` : 'Just Pete, clean eating, high protein, no cooking.'}
-
-Respond ONLY with valid JSON:
-{
-  "alternatives": [
-    {"name": "Meal name", "description": "Brief description", "ingredientsUsed": ["x","y"]},
-    {"name": "Meal name", "description": "Brief description", "ingredientsUsed": ["x","y"]},
-    {"name": "Meal name", "description": "Brief description", "ingredientsUsed": ["x","y"]}
-  ]
-}`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.settings.apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 800 }, thinkingConfig: { thinkingLevel: "minimal" }
-      })
-    });
-    const data = await res.json();
-    let text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    const result = JSON.parse(text);
-    renderSwapModal(result.alternatives, dayIdx, type);
-  } catch(e) {
-    document.getElementById('swapContent').innerHTML = `<p style="color:var(--accent);">Error: ${e.message}</p>`;
-  }
-}
-
-function renderSwapModal(alternatives, dayIdx, type) {
-  document.getElementById('swapContent').innerHTML = `
-    <h2>Swap meal</h2>
-    <p class="modal-subtitle">Pick an alternative for ${state.plan.days[dayIdx].day}</p>
-    ${alternatives.map((alt, i) => `
-      <div style="background:var(--cream);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.9rem 1rem;margin-bottom:0.75rem;cursor:pointer;" onclick="confirmSwap(${dayIdx},'${type}',${i})" id="alt-${i}">
-        <div style="font-weight:500;font-size:0.95rem;margin-bottom:0.2rem;">${alt.name}</div>
-        <div style="font-size:0.82rem;color:var(--ink-muted);">${alt.description}</div>
-      </div>
-    `).join('')}
-    <button class="btn btn-ghost btn-full" style="margin-top:0.5rem;" onclick="document.getElementById('swapModal').classList.remove('open')">Cancel</button>
-  `;
-  // Store alternatives temporarily
-  window._swapAlts = alternatives;
-}
-
-function confirmSwap(dayIdx, type, altIdx) {
-  const alt = window._swapAlts[altIdx];
-  if (type === 'solo') state.plan.days[dayIdx].soloMeal = alt;
-  else state.plan.days[dayIdx].familyMeal = alt;
-  save();
-  renderPlan();
-  document.getElementById('swapModal').classList.remove('open');
-}
-
-// ─── MODAL ───────────────────────────────────────────────────
-function closeModal(e) {
-  if (e.target === e.currentTarget) {
-    document.getElementById('recipeModal').classList.remove('open');
-    document.getElementById('swapModal').classList.remove('open');
-  }
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    document.getElementById('recipeModal').classList.remove('open');
-    document.getElementById('swapModal').classList.remove('open');
-  }
-});
+// Init
+document.getElementById('apiKey').value = state.settings.apiKey;
+document.getElementById('sheetUrl').value = state.settings.sheetUrl;
+updateSheetStatus();
+renderPlan();
 </script>
 </body>
 </html>
