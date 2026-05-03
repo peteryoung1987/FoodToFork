@@ -82,3 +82,45 @@ async function regenMeal(date) {
     } catch(e) { alert("Couldn't reroll."); }
     setStatus("Ready");
 }
+
+async function getRecipe(meal) {
+    if(!state.ak) return alert("API Key missing.");
+    
+    // Create Modal
+    const modal = document.createElement('div');
+    modal.id = "recipe-overlay";
+    modal.className = "recipe-modal-full"; // Add this class to your CSS
+    modal.innerHTML = `<div class="loader-box"><h2>Asking the Chef for ${meal}...</h2></div>`;
+    document.body.appendChild(modal);
+
+    const prompt = `
+        TASK: Write a recipe for "${meal}".
+        USE INVENTORY: ${state.ings.map(i=>i.Item).join(', ')}.
+        UK Focus: Use UK measurements (g, ml, cm) and pantry items.
+        FORMAT: Direct, no fluff. Include:
+        1. Ingredients (highlighting which are from inventory).
+        2. Simple Method.
+        3. A "Shopping List" section for items not in inventory with estimated UK prices.
+    `;
+
+    try {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        
+        const data = await response.json();
+        const recipeHtml = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
+
+        modal.innerHTML = `
+            <div class="recipe-content">
+                <h1>${meal}</h1>
+                <div class="recipe-text">${recipeHtml}</div>
+                <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">Close Recipe</button>
+            </div>
+        `;
+    } catch (e) {
+        modal.innerHTML = `<div>Error fetching recipe. <button onclick="this.parentElement.parentElement.remove()">Close</button></div>`;
+    }
+}
