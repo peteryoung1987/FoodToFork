@@ -20,18 +20,13 @@
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
   label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #78716C; }
   input, select { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
-  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
   .btn-p { background: var(--accent); color: white; }
   .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
-  
-  /* Staples Tag Styling */
-  .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; max-height: 300px; overflow-y: auto; padding: 5px; }
-  .staple-tag { background: #E7E2DC; color: var(--ink); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; border: 1px solid transparent; }
-  .staple-tag:hover { border-color: var(--accent); }
-  .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; font-size: 1rem; }
+  .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px; }
+  .staple-tag { background: #E7E2DC; color: var(--ink); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; }
   .add-staple-row { display: flex; gap: 8px; margin-bottom: 15px; }
-  .add-staple-row input { margin-bottom: 0; }
-  
   .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
   .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
   .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
@@ -58,15 +53,12 @@
 <div id="v-ings" class="view">
   <div class="card">
     <h2>Add Item</h2>
-    <label>Ingredient Name</label>
-    <input type="text" id="n" placeholder="e.g. Minced Beef">
+    <label>Ingredient Name</label><input type="text" id="n" placeholder="e.g. Minced Beef">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        <input type="number" id="q" value="1" placeholder="Qty">
-        <select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
+        <input type="number" id="q" value="1"><select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-        <select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select>
-        <input type="date" id="d">
+        <select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select><input type="date" id="d">
     </div>
     <button class="btn btn-p" onclick="push('add')">Save to Sheet</button>
     <button class="btn btn-s" onclick="sync()">🔄 Refresh</button>
@@ -81,15 +73,15 @@
     <label>Apps Script URL</label><input type="text" id="su">
     <button class="btn btn-p" onclick="saveS()">Save Config</button>
   </div>
-
   <div class="card">
     <h2>Staples Manager</h2>
     <div class="add-staple-row">
-        <input type="text" id="newStaple" placeholder="Add new staple...">
-        <button class="btn btn-p" style="width: auto; padding: 0 1.5rem;" onclick="addStapleTag()">Add</button>
+        <input type="text" id="newStaple" placeholder="Add staple..." onkeydown="if(event.key==='Enter')addStapleTag()">
+        <button class="btn btn-p" style="width: auto;" onclick="addStapleTag()">Add</button>
     </div>
     <div id="stapleTags" class="staple-container"></div>
-    <button class="btn btn-s" onclick="pushStaples()">Push Staples to Sheet</button>
+    <button class="btn btn-s" onclick="pushStaples()">Push to Sheet</button>
+    <button class="btn btn-s" style="color:red; border-color:#fecaca;" onclick="if(confirm('Clear all staples?')) {state.staples=[]; renderStapleTags();}">Clear All</button>
   </div>
 </div>
 
@@ -108,40 +100,26 @@ function saveS() {
   state.ak = document.getElementById('ak').value.trim();
   state.su = document.getElementById('su').value.trim();
   localStorage.setItem('ftf_v2', JSON.stringify(state));
-  alert("Settings Saved");
+  alert("Saved");
+}
+
+function renderStapleTags() {
+    const container = document.getElementById('stapleTags');
+    container.innerHTML = state.staples.map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
 }
 
 function addStapleTag() {
     const input = document.getElementById('newStaple');
     const val = input.value.trim();
-    if(!val) return;
-    if(state.staples.includes(val)) { alert("Already in list, mate."); return; }
-    state.staples.push(val);
-    input.value = '';
-    renderStapleTags();
+    if(val && !state.staples.includes(val)) { state.staples.push(val); input.value = ''; renderStapleTags(); }
 }
 
-function removeStaple(index) {
-    state.staples.splice(index, 1);
-    renderStapleTags();
-}
-
-function renderStapleTags() {
-    const container = document.getElementById('stapleTags');
-    container.innerHTML = state.staples.map((s, i) => `
-        <div class="staple-tag">
-            ${s} <span class="remove-staple" onclick="removeStaple(${i})">×</span>
-        </div>
-    `).join('');
-}
+function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
 async function pushStaples() {
-    if(!state.su) return alert("URL required");
     localStorage.setItem('ftf_v2', JSON.stringify(state));
-    document.getElementById('status').innerText = "Updating Staples...";
     await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'updateStaples', staples: state.staples }) });
-    alert("Staples updated on Sheet!");
-    document.getElementById('status').innerText = "Synced";
+    alert("Updated on Sheet!");
 }
 
 async function sync() {
@@ -152,52 +130,50 @@ async function sync() {
   state.staples = d.staples;
   localStorage.setItem('ftf_v2', JSON.stringify(state));
   renderI();
-  document.getElementById('status').innerText = "Synced";
 }
 
 async function push(action, name = null) {
   const payload = { action, name: name || document.getElementById('n').value, qty: document.getElementById('q').value, storage: document.getElementById('s').value, category: document.getElementById('c').value, useBy: document.getElementById('d').value };
-  if(!payload.name && action === 'add') return;
   await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-  if(action === 'add') document.getElementById('n').value = '';
   setTimeout(sync, 1500);
 }
 
 function renderI() {
-  document.getElementById('iList').innerHTML = state.ings.map(i => `
-    <div class="ing-item">
-      <div><strong>${i.Item} (x${i.Qty || 1})</strong><br><small>${i.Storage} | ${i['Use By'] || ''}</small></div>
-      <button class="btn btn-s" style="width:auto; margin:0;" onclick="push('use', '${i.Item}')">Eat it</button>
-    </div>
-  `).join('');
+  document.getElementById('iList').innerHTML = state.ings.map(i => `<div class="ing-item"><div><strong>${i.Item} (x${i.Qty})</strong><br><small>${i.Storage} | ${i['Use By'] || ''}</small></div><button class="btn btn-s" style="width:auto;margin:0" onclick="push('use','${i.Item}')">Eat it</button></div>`).join('');
 }
 
 async function generate() {
   const btn = document.getElementById('gBtn');
-  btn.disabled = true;
-  document.getElementById('pCont').innerHTML = "Generating...";
-  const prompt = `Plan 7 days of meals for Pete. Solo Lunch: NO COOK. Family Dinner: Cooked. Sunday Roast. Ingredients: ${state.ings.map(i => i.Item).join(', ')}. Staples: ${state.staples.join(', ')}. Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
+  const debug = document.getElementById('debugBox');
+  btn.disabled = true; debug.style.display = 'none';
+  document.getElementById('pCont').innerHTML = "Thinking...";
+  
+  const prompt = `Plan 7 days. Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast. Ingredients: ${state.ings.map(i => i.Item).join(', ')}. Staples: ${state.staples.join(', ')}. Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
+
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+      body: JSON.stringify({ 
+        contents: [{ parts: [{ text: prompt }] }], 
+        generation_config: { response_mime_type: "application/json" } 
+      })
     });
     const d = await r.json();
+    if(d.error) throw new Error(d.error.message);
     state.plan = JSON.parse(d.candidates[0].content.parts[0].text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
-  } catch (e) { document.getElementById('pCont').innerHTML = "Failed. Check API Key."; }
+  } catch (e) { 
+    debug.style.display = 'block'; debug.innerText = e.message;
+    document.getElementById('pCont').innerHTML = "Failed. Check error box."; 
+  }
   btn.disabled = false;
 }
 
 function renderP() {
   if(!state.plan) return;
-  document.getElementById('pCont').innerHTML = state.plan.days.map(d => `
-    <div class="day-card"><div class="day-h">${d.day}</div>
-    <div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div>
-    <div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>
-  `).join('');
+  document.getElementById('pCont').innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day}</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
 }
 
 document.getElementById('ak').value = state.ak;
