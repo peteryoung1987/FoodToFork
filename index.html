@@ -6,58 +6,34 @@
 <title>Fridge to Fork</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; 
-    --card: #FFFFFF; --radius: 12px; --soft-ink: #44403C;
-  }
+  :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.5; min-height: 100vh; }
-  
-  header { background: var(--ink); color: var(--cream); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-  header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; letter-spacing: -0.02em; }
-  #status { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
-
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.5; padding-bottom: 50px; }
+  header { background: var(--ink); color: var(--cream); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
+  #status { font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
   .tabs { background: var(--ink); display: flex; padding: 0 1rem; gap: 0.5rem; border-bottom: 1px solid #2C2927; }
-  .tab { font-size: 0.75rem; font-weight: 700; color: #A8A29E; padding: 1rem; border: none; background: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; }
+  .tab { font-size: 0.75rem; font-weight: 700; color: #A8A29E; padding: 1rem; border: none; background: none; cursor: pointer; text-transform: uppercase; }
   .tab.active { color: var(--cream); border-bottom: 3px solid var(--accent); }
-
-  .view { display: none; padding: 1.5rem 1rem; max-width: 500px; margin: 0 auto; animation: fadeIn 0.3s ease; }
+  .view { display: none; padding: 1.5rem 1rem; max-width: 500px; margin: 0 auto; }
   .view.active { display: block; }
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-  h2 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 1rem; }
-
-  label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; color: var(--soft-ink); }
-  input { width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #fafafa; }
-  
-  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
+  label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #78716C; }
+  input, select { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
   .btn-p { background: var(--accent); color: white; }
-  .btn-p:hover { background: #9A3412; }
-  .btn-s { background: white; border: 2px solid var(--border); color: var(--soft-ink); margin-top: 0.75rem; }
-  .btn-s:hover { border-color: var(--accent); color: var(--accent); }
-  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
+  .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
   .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
-  .ing-info strong { display: block; font-size: 1rem; color: var(--ink); }
-  .ing-info small { color: var(--accent); font-weight: 600; font-size: 0.8rem; }
-  .btn-eat { width: auto; padding: 0.5rem 1rem; font-size: 0.75rem; border: 2px solid var(--accent); color: var(--accent); background: transparent; border-radius: 6px; font-weight: 700; cursor: pointer; }
-  .btn-eat:hover { background: var(--accent); color: white; }
-
-  .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-  .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; font-size: 1.1rem; }
-  .m-box { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
-  .m-box:last-child { border-bottom: none; }
-  .m-box small { display: block; text-transform: uppercase; font-size: 0.65rem; font-weight: 800; color: var(--accent); margin-bottom: 4px; letter-spacing: 0.05em; }
-  .m-box p { font-size: 0.95rem; font-weight: 500; color: var(--soft-ink); }
+  .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
+  .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
+  .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
+  .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Fridge to Fork</h1>
-  <span id="status">Ready</span>
-</header>
+<header><h1>Fridge to Fork</h1><span id="status">Ready</span></header>
 
 <div class="tabs">
   <button class="tab active" onclick="sh('plan')">The Plan</button>
@@ -67,18 +43,41 @@
 
 <div id="v-plan" class="view active">
   <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
+  <div id="debugBox" class="debug-log"></div>
   <div id="pCont" style="margin-top:1rem;"></div>
 </div>
 
 <div id="v-ings" class="view">
   <div class="card">
-    <h2>Add New Item</h2>
+    <h2>Add Item</h2>
     <label>Ingredient Name</label>
-    <input type="text" id="n" placeholder="e.g. Minced Beef">
-    <label>Use By Date</label>
-    <input type="date" id="d">
-    <button class="btn btn-p" onclick="push('add')">Add to Fridge</button>
-    <button class="btn btn-s" onclick="sync()">🔄 Sync from Sheet</button>
+    <input type="text" id="n" placeholder="e.g. Salmon Fillets">
+    
+    <div class="grid-2">
+        <div><label>Qty</label><input type="number" id="q" value="1" min="1"></div>
+        <div><label>Category</label>
+            <select id="c">
+                <option value="Meat/Fish">Meat/Fish</option>
+                <option value="Veg">Veg</option>
+                <option value="Dairy">Dairy</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="grid-2">
+        <div><label>Storage</label>
+            <select id="s">
+                <option value="Fridge">Fridge</option>
+                <option value="Freezer">Freezer</option>
+                <option value="Cupboard">Cupboard</option>
+            </select>
+        </div>
+        <div><label>Use By</label><input type="date" id="d"></div>
+    </div>
+    
+    <button class="btn btn-p" onclick="push('add')">Save to Sheet</button>
+    <button class="btn btn-s" onclick="sync()">🔄 Refresh from Sheet</button>
   </div>
   <div id="iList"></div>
 </div>
@@ -86,11 +85,9 @@
 <div id="v-set" class="view">
   <div class="card">
     <h2>Setup</h2>
-    <label>Gemini API Key</label>
-    <input type="password" id="ak" placeholder="Enter key">
-    <label>Apps Script Web App URL</label>
-    <input type="text" id="su" placeholder="https://script.google.com/macros/s/...">
-    <button class="btn btn-p" onclick="saveS()">Save Configuration</button>
+    <label>Gemini API Key</label><input type="password" id="ak">
+    <label>Apps Script URL</label><input type="text" id="su">
+    <button class="btn btn-p" onclick="saveS()">Save Config</button>
   </div>
 </div>
 
@@ -100,26 +97,26 @@ let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [
 function sh(v) {
   document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-  const target = document.getElementById('v-'+v);
-  if(target) target.classList.add('active');
-  
-  const tabs = document.querySelectorAll('.tab');
-  if(v==='plan') tabs[0].classList.add('active');
-  if(v==='ings') { tabs[1].classList.add('active'); renderI(); }
-  if(v==='set') tabs[2].classList.add('active');
+  document.getElementById('v-'+v).classList.add('active');
+  if(v==='ings') renderI();
 }
 
 function saveS() {
   state.ak = document.getElementById('ak').value.trim();
   state.su = document.getElementById('su').value.trim();
   localStorage.setItem('ftf_v2', JSON.stringify(state));
-  alert("Settings Saved, mate.");
+  alert("Settings Saved");
+}
+
+function fmtDate(dStr) {
+    if(!dStr) return '';
+    const date = new Date(dStr);
+    return isNaN(date) ? dStr : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
 
 async function sync() {
-  if(!state.su) return alert("Needs Apps Script URL in Settings!");
-  const status = document.getElementById('status');
-  status.innerText = "Syncing...";
+  if(!state.su) return;
+  document.getElementById('status').innerText = "Syncing...";
   try {
     const r = await fetch(state.su);
     const d = await r.json();
@@ -127,53 +124,46 @@ async function sync() {
     state.staples = d.staples;
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderI();
-    status.innerText = "Synced";
-  } catch(e) {
-    status.innerText = "Sync Error";
-    console.error(e);
-  }
+    document.getElementById('status').innerText = "Synced";
+  } catch(e) { document.getElementById('status').innerText = "Error"; }
 }
 
-async function push(action, name = null, date = null) {
-  const n = name || document.getElementById('n').value;
-  const d = date || document.getElementById('d').value;
-  if(!n && action === 'add') return;
+async function push(action, name = null) {
+  const payload = {
+    action,
+    name: name || document.getElementById('n').value,
+    qty: document.getElementById('q').value,
+    category: document.getElementById('c').value,
+    storage: document.getElementById('s').value,
+    useBy: document.getElementById('d').value
+  };
+  if(!payload.name && action === 'add') return;
   
   document.getElementById('status').innerText = "Updating...";
-  try {
-    await fetch(state.su, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action, name: n, useBy: d })
-    });
-    if(action === 'add') document.getElementById('n').value = '';
-    setTimeout(sync, 1500);
-  } catch(e) {
-    alert("Push failed: " + e.message);
-  }
+  await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+  if(action === 'add') document.getElementById('n').value = '';
+  setTimeout(sync, 1500);
 }
 
 function renderI() {
-  const list = document.getElementById('iList');
-  if(state.ings.length === 0) {
-    list.innerHTML = '<p style="text-align:center; color:#A8A29E; margin-top:1rem;">Fridge is empty. Add something!</p>';
-    return;
-  }
-  list.innerHTML = state.ings.map(i => `
+  document.getElementById('iList').innerHTML = state.ings.map(i => `
     <div class="ing-item">
-      <div class="ing-info"><strong>${i.Item}</strong><small>${i['Use By'] ? 'Exp: ' + i['Use By'] : 'No Date'}</small></div>
-      <button class="btn-eat" onclick="push('use', '${i.Item}')">Eat it</button>
+      <div><strong>${i.Item} (x${i.Qty || 1})</strong><small style="color:var(--accent); font-size:0.75rem;">${i.Storage} | ${fmtDate(i['Use By'])}</small></div>
+      <button class="btn btn-s" style="width:auto; margin:0;" onclick="push('use', '${i.Item}')">Eat it</button>
     </div>
   `).join('');
 }
 
 async function generate() {
-  if(!state.ak) return alert("Add API key in Settings!");
   const btn = document.getElementById('gBtn');
-  btn.disabled = true;
-  btn.innerText = "🍽️ Planning...";
-  
-  const prompt = `Plan 7 days. Lunch: Cold/No cook. Dinner: Cooked family meal. Sunday: Roast. 
+  const debug = document.getElementById('debugBox');
+  btn.disabled = true; debug.style.display = 'none';
+  document.getElementById('pCont').innerHTML = "Generating...";
+
+  const prompt = `Plan 7 days of meals for Pete. 
+  Solo Lunch: Assembly only, NO COOKING. 
+  Family Dinner: Cooked for 3, mild spice. 
+  Sunday: Traditional Roast. 
   Ingredients: ${state.ings.map(i => i.Item).join(', ')}. 
   Staples: ${state.staples.join(', ')}.
   Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
@@ -184,29 +174,29 @@ async function generate() {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
     });
     const d = await r.json();
+    
+    if(!d.candidates) {
+        debug.style.display = 'block';
+        debug.innerText = "API Response Error: " + JSON.stringify(d);
+        throw new Error("No candidates returned.");
+    }
+
     state.plan = JSON.parse(d.candidates[0].content.parts[0].text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
-  } catch(e) {
-    alert("Planning error: " + e.message);
-  }
+  } catch (e) { document.getElementById('pCont').innerHTML = "Planning failed. Check debug log."; }
   btn.disabled = false;
-  btn.innerText = "✨ Generate Week Plan";
 }
 
 function renderP() {
-  const cont = document.getElementById('pCont');
   if(!state.plan) return;
-  cont.innerHTML = state.plan.days.map(d => `
-    <div class="day-card">
-      <div class="day-h">${d.day}</div>
-      <div class="m-box"><small>Lunch (Solo)</small><p>${d.lunch}</p></div>
-      <div class="m-box"><small>Dinner (Family)</small><p>${d.dinner}</p></div>
-    </div>
+  document.getElementById('pCont').innerHTML = state.plan.days.map(d => `
+    <div class="day-card"><div class="day-h">${d.day}</div>
+    <div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div>
+    <div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>
   `).join('');
 }
 
-// Start
 document.getElementById('ak').value = state.ak;
 document.getElementById('su').value = state.su;
 if(state.plan) renderP();
