@@ -1078,12 +1078,12 @@ Respond ONLY with valid JSON in this exact format:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.settings.apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.settings.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.8, maxOutputTokens: 4000 }
+        generationConfig: { temperature: 0.8, maxOutputTokens: 4000 }, thinkingConfig: { thinkingLevel: "minimal" }
       })
     });
 
@@ -1228,12 +1228,12 @@ Respond ONLY with valid JSON:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.settings.apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.settings.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }
+        generationConfig: { temperature: 0.7, maxOutputTokens: 1500 }, thinkingConfig: { thinkingLevel: "minimal" }
       })
     });
 
@@ -1290,12 +1290,12 @@ Respond ONLY with valid JSON:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.settings.apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.settings.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 800 }
+        generationConfig: { temperature: 0.9, maxOutputTokens: 800 }, thinkingConfig: { thinkingLevel: "minimal" }
       })
     });
     const data = await res.json();
