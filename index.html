@@ -446,13 +446,14 @@ async function generatePlan() {
   }).join(', ');
 
   const prompt = `You are a meal planning assistant for a UK household.
-LUNCH: Single adult male. High volume, low calorie, centred on one protein. Keep it varied.
+LUNCH: Pete only: High volume, low calorie, centred on one protein. Keep it varied. Most of the time should be a cold protein and salad. no need to make this fancy, Pete loves salad.
 DINNER: Family of 3 (2 adults, 1 girl aged 9). Must include a Sunday Roast on the Sunday. Family-friendly.
 FRIDGE/FREEZER INVENTORY: ${state.ings.map(i=>`${i.Qty}${i.Unit} ${i.Item}`).join(', ')||'Nothing specific'}.
 USER STAPLES: ${state.staples.join(', ')||'None'}.
-UNIVERSAL PANTRY: Assume all standard UK pantry essentials available.
+UNIVERSAL PANTRY: Assume all standard UK pantry essentials available with regards to cupboard stock - dried herbs, flour, rice, pasta, etc. proteins will specifically be listed in the fridge/freezer inventory.
 Plan meals for EXACTLY these 7 dates in order: ${dates}.
 Use the exact date strings provided (DD/MM/YYYY format). Do not invent or change any dates.
+Do not include meats/fish that are not explicitly on the list. 
 Return ONLY valid JSON, no markdown fences:
 {"days":[{"date":"DD/MM/YYYY","day":"Monday","lunch":"meal name","dinner":"meal name","used_ings":["item"]}]}`;
 
@@ -506,7 +507,8 @@ async function getRecipe(meal) {
   const prompt = `Write a clear, friendly recipe for "${meal}" using UK measurements.
 Available: ${state.ings.map(i=>i.Item).join(', ')}. Staples: ${state.staples.join(', ')}.
 Standard UK pantry available.
-Include ingredients list and method only. No shopping list.
+Include ingredients list and method only.
+If the meal is a bit more adventurous or spicy, add a "safe" option to allow the 9 year old to have something a bit more familiar for her plate. it should be optional, but allow a concurrent meal to be prepped with less spicy/challenging flavours.
 Tone: direct, warm, no fluff. Use markdown with ### headings and bullet/numbered lists.`;
 
   try {
