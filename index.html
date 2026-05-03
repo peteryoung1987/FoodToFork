@@ -1,220 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fridge to Fork v2</title>
-    <style>
-        body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f4f4f9; color: #333; }
-        button { cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: opacity 0.2s; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
-        
-        .sync-row { display: flex; gap: 10px; margin-bottom: 20px; }
-        .sync-row button { flex: 1; padding: 12px; color: white; }
-        #pullBtn { background: #2196F3; }
-        #pushBtn { background: #4CAF50; }
-        
-        #gBtn { width: 100%; padding: 15px; background: #673AB7; color: white; font-size: 1.1rem; margin-bottom: 20px; }
-        
-        .meal-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .meal-card h4 { margin: 0 0 10px 0; color: #666; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .meal-item { padding: 8px 0; cursor: pointer; display: flex; align-items: center; }
-        .meal-item:hover { color: #2196F3; }
-        .meal-item span { margin-right: 10px; }
-
-        /* Modal styling */
-        #recipeModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; overflow-y: auto; }
-        .modal-content { background: #fff; color: #333; margin: 5% auto; padding: 20px; width: 90%; max-width: 500px; border-radius: 15px; position: relative; }
-        .close-btn { position: sticky; top: 0; float: right; background: #ff4444; color: white; padding: 5px 10px; border-radius: 5px; }
-        
-        #debugBox { background: #ffebee; color: #c62828; padding: 10px; border-radius: 8px; margin-top: 20px; display: none; font-family: monospace; font-size: 0.8rem; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fridge to Fork</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); padding-bottom: 50px; }
+  header { background: var(--ink); color: var(--cream); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
+  #status { font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
+  .tabs { background: var(--ink); display: flex; padding: 0 1rem; gap: 0.5rem; border-bottom: 1px solid #2C2927; }
+  .tab { font-size: 0.75rem; font-weight: 700; color: #A8A29E; padding: 1rem; border: none; background: none; cursor: pointer; text-transform: uppercase; }
+  .tab.active { color: var(--cream); border-bottom: 3px solid var(--accent); }
+  .view { display: none; padding: 1.5rem 1rem; max-width: 500px; margin: 0 auto; }
+  .view.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
+  label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #78716C; }
+  input, select { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+  .btn:active { transform: scale(0.98); opacity: 0.9; }
+  .btn-p { background: var(--accent); color: white; }
+  .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
+  .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px; }
+  .staple-tag { background: #E7E2DC; color: var(--ink); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; }
+  .add-staple-row { display: flex; gap: 8px; margin-bottom: 15px; }
+  .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
+  .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
+  .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
+  .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
+  .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
+</style>
 </head>
 <body>
 
-    <h2>🍴 Fridge to Fork</h2>
+<header><h1>Fridge to Fork</h1><span id="status">Ready</span></header>
 
-    <div class="sync-row">
-        <button id="pullBtn" onclick="sync('pull')">📥 Pull Cloud</button>
-        <button id="pushBtn" onclick="sync('push')">📤 Push Cloud</button>
+<div class="tabs">
+  <button class="tab active" onclick="sh('plan')">Plan</button>
+  <button class="tab" onclick="sh('ings')">Fridge</button>
+  <button class="tab" onclick="sh('set')">Settings</button>
+</div>
+
+<div id="v-plan" class="view active">
+  <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
+  <div id="debugBox" class="debug-log"></div>
+  <div id="pCont" style="margin-top:1rem;"></div>
+</div>
+
+<div id="v-ings" class="view">
+  <div class="card">
+    <label>Ingredient</label><input type="text" id="n" placeholder="e.g. Chicken Thighs">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <input type="number" id="q" value="1"><select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
     </div>
-
-    <button id="gBtn" onclick="generate()">🎲 Generate 7-Day Plan</button>
-
-    <div id="pCont">
-        <!-- Meal cards will render here -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+        <select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select><input type="date" id="d">
     </div>
+    <button class="btn btn-p" onclick="push('add')">Add to Fridge</button>
+    <button class="btn btn-s" onclick="sync()">🔄 Refresh List</button>
+  </div>
+  <div id="iList"></div>
+</div>
 
-    <div id="debugBox"></div>
+<div id="v-set" class="view">
+  <div class="card">
+    <h2>Staples Manager</h2>
+    <div class="add-staple-row">
+        <input type="text" id="newStaple" placeholder="Add staple..." onkeydown="if(event.key==='Enter')addStapleTag()">
+        <button class="btn btn-p" style="width: auto;" onclick="addStapleTag()">Add</button>
+    </div>
+    <div id="stapleTags" class="staple-container"></div>
+    <button class="btn btn-p" style="margin-top:20px;" onclick="pushStaples()">💾 Sync & Save Staples</button>
+    <button class="btn btn-s" onclick="sync()">🔄 Pull Latest</button>
+  </div>
+  <div class="card">
+    <h2>Config</h2>
+    <label>Gemini API Key</label><input type="password" id="ak">
+    <label>Apps Script URL</label><input type="text" id="su">
+    <button class="btn btn-s" onclick="saveS()">Save Credentials</button>
+  </div>
+</div>
 
-    <!-- Recipe Modal -->
-    <div id="recipeModal">
-        <div class="modal-content">
-            <button class="close-btn" onclick="closeModal()">Close</button>
-            <div id="recipeBody"></div>
+<script>
+let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [], plan: null, ak: '', su: '' };
+
+function sh(v) {
+  document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  if(v==='ings') renderI();
+  if(v==='set') renderStapleTags();
+}
+
+// FORMAT DATE PRETTILY
+function fmtD(dStr) {
+    if(!dStr) return '';
+    const d = new Date(dStr);
+    return isNaN(d) ? dStr : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function saveS() {
+  state.ak = document.getElementById('ak').value.trim();
+  state.su = document.getElementById('su').value.trim();
+  localStorage.setItem('ftf_v2', JSON.stringify(state));
+  alert("Settings saved locally.");
+}
+
+function renderStapleTags() {
+    const container = document.getElementById('stapleTags');
+    container.innerHTML = (state.staples || []).map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
+}
+
+function addStapleTag() {
+    const input = document.getElementById('newStaple');
+    const val = input.value.trim();
+    if(val && !state.staples.includes(val)) { state.staples.push(val); input.value = ''; renderStapleTags(); }
+}
+
+function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
+
+async function pushStaples() {
+    document.getElementById('status').innerText = "Syncing...";
+    // First, grab the latest from the sheet so we don't overwrite others' work
+    await sync(); 
+    // Re-save current state to ensure the new tag we just added is included
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'updateStaples', staples: state.staples }) });
+    document.getElementById('status').innerText = "Saved";
+    alert("Staples synced with cloud!");
+}
+
+async function sync() {
+  if(!state.su) return;
+  try {
+    const r = await fetch(state.su);
+    const d = await r.json();
+    state.ings = d.ingredients.filter(i => i.Used !== "Yes" && i.Item);
+    state.staples = d.staples || [];
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI();
+    renderStapleTags();
+    document.getElementById('status').innerText = "Ready";
+  } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
+}
+
+async function push(action, name = null) {
+  const payload = { action, name: name || document.getElementById('n').value, qty: document.getElementById('q').value, storage: document.getElementById('s').value, category: document.getElementById('c').value, useBy: document.getElementById('d').value };
+  await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+  setTimeout(sync, 1000);
+}
+
+function renderI() {
+  document.getElementById('iList').innerHTML = state.ings.map(i => `
+    <div class="ing-item">
+        <div>
+            <strong>${i.Item} (x${i.Qty})</strong><br>
+            <small>${i.Storage} | Use by: ${fmtD(i['Use By'])}</small>
         </div>
-    </div>
+        <button class="btn btn-s" style="width:auto;margin:0;padding:0.5rem;" onclick="push('use','${i.Item}')">Eat</button>
+    </div>`).join('');
+}
 
-    <script>
-        // --- CONFIGURATION ---
-        let state = JSON.parse(localStorage.getItem('ftf_v2')) || {
-            ings: [],
-            staples: [],
-            plan: { days: [] },
-            ak: 'YOUR_GEMINI_API_KEY', // Ensure this is set
-            scriptUrl: 'YOUR_APPS_SCRIPT_URL' // Ensure this is set
-        };
+async function generate() {
+  const btn = document.getElementById('gBtn');
+  const debug = document.getElementById('debugBox');
+  btn.disabled = true; debug.style.display = 'none';
+  document.getElementById('pCont').innerHTML = "Chef is thinking...";
 
-        const MODEL = "gemini-3.1-flash-lite-preview";
+  const prompt = `Return ONLY JSON format: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}. Plan 7 days using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast.`;
+  // Get today's date to start the 7-day window
+  const today = new Date().toLocaleDateString('en-GB');
 
-        // Save state locally
-        function save() {
-            localStorage.setItem('ftf_v2', JSON.stringify(state));
-        }
+  const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
+  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
+  Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast.`;
 
-        // --- UI RENDERING ---
-        function renderAll() {
-            renderP();
-            // Add calls to render your ingredients/staples lists here if they are on the same page
-        }
+  try {
+// URL CHANGE: Use v1beta and the specific technical ID
+const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${state.ak}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+});
+    // USE THIS EXACT URL STRING FROM YOUR LIST
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
 
-        function renderP() {
-            const cont = document.getElementById('pCont');
-            if (!state.plan || !state.plan.days || state.plan.days.length === 0) {
-                cont.innerHTML = "<p style='text-align:center; color:#888;'>No plan active. Hit generate or pull from cloud.</p>";
-                return;
-            }
+    const d = await r.json();
 
-            cont.innerHTML = state.plan.days.map(d => `
-                <div class="meal-card">
-                    <h4>${d.date} — ${d.day}</h4>
-                    <div class="meal-item" onclick="getRecipe('${d.lunch}')">
-                        <span>🥗</span> <strong>Lunch:</strong> ${d.lunch}
-                    </div>
-                    <div class="meal-item" onclick="getRecipe('${d.dinner}')">
-                        <span>🍲</span> <strong>Dinner:</strong> ${d.dinner}
-                    </div>
-                </div>
-            `).join('');
-        }
+    if (d.error) throw new Error(`${d.error.code}: ${d.error.message}`);
+    if (!d.candidates || !d.candidates[0]) throw new Error("AI returned an empty response. Check safety settings.");
+    if (!d.candidates || !d.candidates[0]) throw new Error("No response. Check your API key permissions.");
 
-        // --- SYNC LOGIC ---
-        async function sync(type) {
-            const btn = document.getElementById(type === 'push' ? 'pushBtn' : 'pullBtn');
-            const oldText = btn.innerText;
-            btn.innerText = "Processing...";
+    let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+    state.plan = JSON.parse(text);
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderP();
+  } catch (e) { 
+    debug.style.display = 'block'; 
+    debug.innerText = "Error: " + e.message;
+    document.getElementById('pCont').innerHTML = "Failed to generate plan."; 
+  }
+  btn.disabled = false;
+}
 
-            try {
-                if (type === 'pull') {
-                    const r = await fetch(state.scriptUrl, { 
-                        method: 'POST', 
-                        body: JSON.stringify({ action: 'pullAll' }) 
-                    });
-                    const data = await r.json();
-                    
-                    state.ings = data.ings;
-                    state.staples = data.staples;
-                    
-                    // Transform flat sheet rows back into our grouped Day objects
-                    const grouped = data.plan.reduce((acc, curr) => {
-                        let day = acc.find(a => a.date === curr.date);
-                        if (!day) {
-                            day = { date: curr.date, day: "", lunch: "", dinner: "" };
-                            acc.push(day);
-                        }
-                        if (curr.type === 'Lunch') day.lunch = curr.name;
-                        if (curr.type === 'Dinner') day.dinner = curr.name;
-                        return acc;
-                    }, []);
-                    
-                    state.plan = { days: grouped };
-                    save();
-                    renderAll();
-                } else {
-                    // Push current state to Cloud
-                    await fetch(state.scriptUrl, { 
-                        method: 'POST', 
-                        mode: 'no-cors', 
-                        body: JSON.stringify({ action: 'pushAll', ...state }) 
-                    });
-                }
-                btn.innerText = "✅ Success";
-            } catch (e) {
-                btn.innerText = "❌ Error";
-                document.getElementById('debugBox').style.display = 'block';
-                document.getElementById('debugBox').innerText = e.message;
-            }
-            setTimeout(() => btn.innerText = oldText, 2000);
-        }
+function renderP() {
+  if(!state.plan) return;
+  document.getElementById('pCont').innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day}</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
+}
 
-        // --- GENERATION LOGIC ---
-        async function generate() {
-            const btn = document.getElementById('gBtn');
-            const cont = document.getElementById('pCont');
-            btn.disabled = true;
-            cont.innerHTML = "<p style='text-align:center;'>✨ Chef is brainstorming... (Using 3.1 Flash Lite)</p>";
-
-            const today = new Date().toLocaleDateString('en-GB');
-            const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"DayName", "lunch":"Meal Name", "dinner":"Meal Name"}]}. 
-            Plan exactly 7 days starting from ${today}.
-            Available Ingredients: ${state.ings.map(i => i.Item).join(', ')}.
-            Current Staples: ${state.staples.join(', ')}.
-            Rule: Assume standard pantry (oil, salt, pepper, flour). Lunch is no-cook. Dinner is family meal. Sunday is Roast. 
-            Vary the meals, avoid repetition.`;
-
-            try {
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${state.ak}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                
-                const d = await r.json();
-                if (d.error) throw new Error(d.error.message);
-
-                let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
-                state.plan = JSON.parse(text);
-                save();
-                renderP();
-            } catch (e) {
-                cont.innerHTML = "⚠️ Generation failed.";
-                document.getElementById('debugBox').style.display = 'block';
-                document.getElementById('debugBox').innerText = e.message;
-            }
-            btn.disabled = false;
-        }
-
-        // --- ON-DEMAND RECIPE LOGIC ---
-        async function getRecipe(mealName) {
-            const modal = document.getElementById('recipeModal');
-            const body = document.getElementById('recipeBody');
-            modal.style.display = 'block';
-            body.innerHTML = `<h3>Cooking up instructions for ${mealName}...</h3>`;
-
-            const prompt = `Direct, succinct recipe for "${mealName}". 
-            Context: Use ${state.ings.map(i => i.Item).join(', ')} and ${state.staples.join(', ')}. 
-            Tone: Casual, helpful, UK English. No waffle. Give clear steps.`;
-
-            try {
-                const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${state.ak}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                const d = await r.json();
-                const recipeText = d.candidates[0].content.parts[0].text;
-                body.innerHTML = `<h2>${mealName}</h2><div style="white-space: pre-wrap; line-height:1.5;">${recipeText}</div>`;
-            } catch (e) {
-                body.innerHTML = "Failed to load recipe. Just wing it? (Error: " + e.message + ")";
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('recipeModal').style.display = 'none';
-        }
-
-        // Initial Boot
-        window.onload = renderAll;
-    </script>
+document.getElementById('ak').value = state.ak;
+document.getElementById('su').value = state.su;
+if(state.plan) renderP();
+</script>
 </body>
 </html>
