@@ -380,7 +380,11 @@ async function syncNow() {
   setStatus('Syncing…');
   document.getElementById('syncBtn').disabled = true;
   try {
-    const r = await fetch(state.su.trim() + '?action=pullAll&t=' + Date.now());
+    const r = await fetch(state.su.trim() + '?t=' + Date.now(), {
+      method: 'GET',
+      credentials: 'omit',
+      redirect: 'follow',
+    });
     if (!r.ok) throw new Error('HTTP '+r.status);
     const d = await r.json();
     if (d.error) throw new Error(d.error);
@@ -388,8 +392,11 @@ async function syncNow() {
     state.staples = d.staples||[];
     if (d.plan && Array.isArray(d.plan.days)) state.plan = d.plan;
     persist(); renderFridge(); renderMealPlan(); renderStapleTags();
-  } catch(e) { alert('Sync failed: '+e.message); }
-  setStatus('Ready');
+    setStatus('Ready');
+  } catch(e) {
+    alert('Sync failed: '+e.message);
+    setStatus('Ready');
+  }
   document.getElementById('syncBtn').disabled = false;
 }
 
