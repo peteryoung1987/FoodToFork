@@ -1,125 +1,77 @@
-async function generatePlan() {
+async function generate() {
     const btn = document.getElementById('gBtn');
     if(!state.ak) return alert("API Key Required");
+    btn.disabled = true; btn.innerText = "Consulting Chef...";
     
-    btn.disabled = true;
-    btn.innerText = "Consulting the Chef...";
-    setStatus("Generating...");
-
     const prompt = `
-        Create a 7-day UK meal plan starting ${new Date().toLocaleDateString('en-GB')}.
-        
-        CONSTRAINTS:
-        - Lunch: For a single male. High protein, high volume, low calorie.
-        - Dinner: For a family of 3 (2 adults, 9yo girl). 
-        - MANDATORY: Sunday Dinner MUST be a traditional Sunday Roast.
-        - INVENTORY: ${state.ings.map(i => `${i.Qty}${i.Unit} ${i.Item} (Expires: ${i['Use By']})`).join(', ')}.
-        - STAPLES: ${state.staples.join(', ')}.
-        - Assume standard UK pantry items are available.
-        
-        OUTPUT: Return ONLY valid JSON in this format:
-        {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":[]}]}
-    `;
+    Lunch : just for single male - should be cored in one protein and be high volume low calorie.
+    Dinner: Family of 3 (2 adults, 9yo girl). Sunday Roast is mandatory.
+    INVENTORY: ${state.ings.map(i => i.Qty + i.Unit + ' ' + i.Item).join(', ')}.
+    USER STAPLES: ${state.staples.join(', ')}.
+    UNIVERSAL PANTRY: Assume standard UK staples (Rice, Pasta, Oil, spices).
+    Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":["item"]}]}. 
+    Plan 7 days from ${new Date().toLocaleDateString('en-GB')}.`;
 
     try {
-        // LOCKED MODEL: gemini-3.1-flash-lite-preview
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-        
-        const data = await response.json();
-        const rawText = data.candidates[0].content.parts[0].text;
-        
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            state.plan = JSON.parse(jsonMatch[0]);
-            persist();
-            renderMealPlan();
-            syncToSheet();
-        }
-    } catch (e) {
-        console.error(e);
-        alert("Error generating plan. Check console.");
-    }
-
-    btn.disabled = false;
-    btn.innerText = "✨ Generate 7-Day Plan";
-    setStatus("Ready");
+        const d = await r.json();
+        const text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+        state.plan = JSON.parse(text);
+        persist();
+        renderMealPlan(); 
+        pushAll(); 
+    } catch(e) { alert("Error generating plan."); }
+    btn.disabled = false; btn.innerText = "✨ Generate New 7-Day Plan";
 }
 
 async function getRecipe(meal) {
-    if(!state.ak) return alert("API Key Required");
-    
-    const modal = document.createElement('div');
-    modal.id = "recipe-overlay";
-    modal.className = "recipe-modal-full";
-    modal.innerHTML = `<div class="recipe-content"><h2>Preparing ${meal}...</h2></div>`;
-    document.body.appendChild(modal);
+    const m = document.createElement('div');
+    m.className = 'recipe-modal';
+    m.id = 'recipe-overlay';
+    m.innerHTML = `<div style="max-width:500px; margin:auto; text-align:center;"><h2>Preparing Recipe...</h2></div>`;
+    document.body.appendChild(m);
 
-    const p = `
-        TASK: Write a recipe for "${meal}".
-        CONSTRAINTS:
-        - Use Inventory: ${state.ings.map(i=>i.Item).join(', ')}.
-        - Tone: Direct, UK-centric.
-        - Include a "Shopping List" for specific recipe items with UK prices.
-    `;
+    const p = `TASK: Write a recipe for "${meal}" based on UK measurements. Use inventory: ${state.ings.map(i=>i.Item).join(', ')}.`;
 
     try {
-        // LOCKED MODEL: gemini-3.1-flash-lite-preview
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
         });
+        const d = await r.json();
+        const recipeText = d.candidates[0].content.parts[0].text;
         
-        const data = await response.json();
-        const recipeText = data.candidates[0].content.parts[0].text;
-        
-        modal.innerHTML = `
-            <div class="recipe-content">
-                <h1>${meal}</h1>
-                <div class="recipe-text">${recipeText.replace(/\n/g, '<br>')}</div>
+        m.innerHTML = `
+            <div style="max-width:500px; margin:0 auto 100px auto; position:relative; padding: 20px;">
+                <h1 style="font-family:Playfair Display;">${meal}</h1>
+                <div style="white-space:pre-wrap; line-height:1.6; color:#44403C; margin: 20px 0;">${recipeText}</div>
                 <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">← Back to Plan</button>
             </div>
         `;
-    } catch(e) {
-        alert("Recipe fetch failed.");
-        modal.remove();
-    }
+    } catch(e) { m.remove(); alert("Error loading recipe."); }
 }
 
-async function regenMeal(date) {
-    setStatus("Rerolling...");
-    const hint = prompt("Any specific idea for this meal?");
-    
-    const p = `
-        Regenerate Dinner for ${date}. ${hint ? 'Hint: '+hint : ''}. 
-        Inventory: ${state.ings.map(i=>i.Item).join(',')}. 
-        Return ONLY JSON: {"dinner":"...", "used_ings":[]}
-    `;
-
+async function regenMeal(date, hint = "") {
+    const p = `Regenerate Dinner for ${date}. ${hint ? 'Hint: '+hint : ''}. Return JSON: {"dinner":"...", "used_ings":[]}`;
     try {
-        // LOCKED MODEL: gemini-3.1-flash-lite-preview
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
         });
-        
-        const data = await response.json();
-        const jsonMatch = data.candidates[0].content.parts[0].text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            const res = JSON.parse(jsonMatch[0]);
-            const idx = state.plan.days.findIndex(x => x.date === date);
-            if (idx !== -1) {
-                state.plan.days[idx].dinner = res.dinner;
-                persist();
-                renderMealPlan();
-                syncToSheet();
-            }
+        const d = await r.json();
+        const res = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/gi, ""));
+        const idx = state.plan.days.findIndex(x => x.date === date);
+        if (idx !== -1) {
+            state.plan.days[idx].dinner = res.dinner;
+            persist(); renderMealPlan(); pushAll();
         }
-    } catch(e) { alert("Could not update meal."); }
-    setStatus("Ready");
+    } catch(e) { alert("Error."); }
+}
+
+function hintMeal(date) { 
+    const h = prompt("Any specific idea for this meal?"); 
+    if(h) regenMeal(date, h); 
 }
