@@ -1,6 +1,5 @@
-// --- INITIALIZATION ---
+// --- INITIALIZATION & TAB SYSTEM ---
 let state = { ings: [], staples: [], plan: { days: [] }, ak: '', su: '' };
-
 const saved = localStorage.getItem('ftf_v2');
 if (saved) state = JSON.parse(saved);
 
@@ -11,45 +10,55 @@ document.addEventListener('DOMContentLoaded', () => {
     sh('plan');
 });
 
-function persist() {
-    localStorage.setItem('ftf_v2', JSON.stringify(state));
-}
+function persist() { localStorage.setItem('ftf_v2', JSON.stringify(state)); }
 
-// --- TAB SYSTEM ---
 function sh(v) {
     document.querySelectorAll('.view, .tab').forEach(e => e.classList.remove('active'));
-    document.getElementById('v-' + v).classList.add('active');
-    document.getElementById('t-' + v).classList.add('active');
+    const view = document.getElementById('v-' + v);
+    const tab = document.getElementById('t-' + v);
+    if(view) view.classList.add('active');
+    if(tab) tab.classList.add('active');
     if(v === 'ings') renderFridge();
     if(v === 'set') renderStapleTags();
     if(v === 'plan') renderMealPlan();
 }
 
-// --- SYNC LOGIC ---
+// --- BULLETPROOF SYNC LOGIC ---
+
 async function sync() {
     if(!state.su) return;
-    document.getElementById('status').innerText = "Syncing...";
+    const status = document.getElementById('status');
+    status.innerText = "Syncing...";
+    
     try {
-        const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
+        // Adding t= parameter prevents Google from serving a cached response
+        const url = state.su.trim() + "?action=pullAll&t=" + Date.now();
+        const r = await fetch(url);
+        if(!r.ok) throw new Error("HTTP Error");
+        
         const d = await r.json();
+        
+        // Map data from your Google Script structure
         state.ings = d.ingredients || [];
         state.staples = d.staples || [];
         if(d.plan) state.plan = d.plan;
+        
         persist();
         renderFridge(); 
         renderMealPlan();
+        status.innerText = "Ready";
     } catch(e) { 
-        console.error("Sync failed:", e);
-        document.getElementById('status').innerText = "Sync Error";
-        return;
+        console.error("Sync Error:", e);
+        status.innerText = "Pull Failed";
     }
-    document.getElementById('status').innerText = "Ready";
 }
 
 async function pushAll() {
     if(!state.su) return;
-    document.getElementById('status').innerText = "Saving...";
+    const status = document.getElementById('status');
+    status.innerText = "Saving...";
     
+    // Explicitly structure the payload to match your doPost requirements
     const payload = JSON.stringify({ 
         action: 'pushAll', 
         ings: state.ings, 
@@ -58,40 +67,41 @@ async function pushAll() {
     });
 
     try {
-        // Removed no-cors to allow the body to transmit correctly
-        await fetch(state.su, { 
+        // We use text/plain to bypass the CORS pre-flight check that breaks GAS
+        await fetch(state.su.trim(), { 
             method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // GAS prefers text/plain for POSTs
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain' },
             body: payload
         });
-        document.getElementById('status').innerText = "Ready";
+        
+        // Since no-cors doesn't return a status, we assume success after a moment
+        setTimeout(() => { status.innerText = "Ready"; }, 1000);
     } catch(e) { 
-        console.error("Push failed:", e); 
-        document.getElementById('status').innerText = "Save Error";
+        console.error("Push Error:", e); 
+        status.innerText = "Save Error";
     }
 }
 
-// --- FRIDGE LOGIC ---
+// --- FRIDGE & EDITING ---
+
 function pushItem() {
     const n = document.getElementById('n').value;
     const q = document.getElementById('q').value;
     const u = document.getElementById('u').value;
-    if(!n) return alert("Enter item name");
+    if(!n) return;
 
-    state.ings.push({ Item: n, Qty: q, Unit: u, Category: 'General' });
+    state.ings.push({ Item: n, Qty: q, Unit: u, Category: 'General', Storage: '', 'Use By': '' });
     document.getElementById('n').value = '';
-    persist();
-    renderFridge();
-    pushAll();
+    persist(); renderFridge(); pushAll();
 }
 
 function renderFridge() {
     const list = document.getElementById('iList');
     if (!state.ings || state.ings.length === 0) {
-        list.innerHTML = "<p style='text-align:center; opacity:0.5;'>Empty fridge.</p>";
+        list.innerHTML = "<p style='text-align:center; opacity:0.5;'>Fridge empty.</p>";
         return;
     }
-
     list.innerHTML = state.ings.map((item, idx) => `
         <div class="ing-card" style="background:white; border:1px solid var(--border); border-radius:10px; margin-bottom:0.75rem; padding:1rem;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -99,9 +109,9 @@ function renderFridge() {
                     <strong>${item.Item}</strong><br>
                     <small>${item.Qty} ${item.Unit || 'units'}</small>
                 </div>
-                <button class="btn btn-s" style="width:auto; color:red; border:none; margin:0;" onclick="eatItem('${item.Item}')">✕</button>
+                <button class="btn btn-s" style="width:auto; color:red; border:none;" onclick="eatItem('${item.Item}')">✕</button>
             </div>
-            <div id="edit-ctrl-${idx}" class="inline-edit-panel" style="display:none; padding:10px; background:#f9f9f9; border-radius:8px; margin-top:10px; border: 1px dashed var(--border);"></div>
+            <div id="edit-ctrl-${idx}" style="display:none; padding:10px; background:#f9f9f9; border-radius:8px; margin-top:10px; border: 1px dashed #ccc;"></div>
         </div>
     `).join('');
 }
@@ -113,9 +123,9 @@ function showInlineEdit(idx) {
 
     panel.innerHTML = `
         <div style="display:flex; gap:10px; margin-bottom:10px;">
-            <div style="flex:1"><label>Qty</label><input type="number" id="edit-q-${idx}" value="${item.Qty}" style="margin-bottom:0;"></div>
+            <div style="flex:1"><label>Qty</label><input type="number" id="edit-q-${idx}" value="${item.Qty}"></div>
             <div style="flex:1"><label>Unit</label>
-                <select id="edit-u-${idx}" style="margin-bottom:0;">
+                <select id="edit-u-${idx}">
                     <option ${item.Unit === 'units' ? 'selected':''}>units</option>
                     <option ${item.Unit === 'g' ? 'selected':''}>g</option>
                     <option ${item.Unit === 'ml' ? 'selected':''}>ml</option>
@@ -130,19 +140,16 @@ function showInlineEdit(idx) {
 function saveInlineUpdate(idx) {
     state.ings[idx].Qty = document.getElementById(`edit-q-${idx}`).value;
     state.ings[idx].Unit = document.getElementById(`edit-u-${idx}`).value;
-    persist();
-    renderFridge();
-    pushAll();
+    persist(); renderFridge(); pushAll();
 }
 
 function eatItem(name) {
     state.ings = state.ings.filter(i => i.Item !== name);
-    persist();
-    renderFridge();
-    pushAll();
+    persist(); renderFridge(); pushAll();
 }
 
-// --- MEAL PLAN RENDER ---
+// --- MEAL PLAN & SETTINGS ---
+
 function renderMealPlan() {
     const cont = document.getElementById('pCont');
     if(!state.plan || !state.plan.days) return;
@@ -157,25 +164,24 @@ function renderMealPlan() {
     });
 
     cont.innerHTML = futureDays.map(d => `
-        <div class="day-card" style="background:white; border:1px solid var(--border); border-radius:12px; margin-bottom:1.25rem; overflow:hidden;">
-            <div class="day-h" style="background:var(--ink); color:white; padding:0.75rem 1.25rem;">${d.day} (${d.date})</div>
-            <div class="m-box" style="padding:1rem; border-bottom:1px solid var(--border);">
+        <div class="day-card">
+            <div class="day-h">${d.day || 'Scheduled'} (${d.date})</div>
+            <div class="m-box">
                 <label>Lunch</label>
-                <p onclick="getRecipe('${d.lunch}')" style="cursor:pointer; text-decoration:underline;">${d.lunch}</p>
+                <p onclick="getRecipe('${d.lunch}')" style="cursor:pointer; text-decoration:underline;">${d.lunch || 'No meal'}</p>
             </div>
-            <div class="m-box" style="padding:1rem;">
+            <div class="m-box">
                 <label>Dinner</label>
-                <p onclick="getRecipe('${d.dinner}')" style="cursor:pointer; text-decoration:underline;">${d.dinner}</p>
+                <p onclick="getRecipe('${d.dinner}')" style="cursor:pointer; text-decoration:underline;">${d.dinner || 'No meal'}</p>
                 <div style="margin-top:10px; display:flex; gap:5px;">
-                    <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="regenMeal('${d.date}')">🎲 Regen</button>
-                    <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="hintMeal('${d.date}')">💡 Hint</button>
+                    <button class="btn btn-s" onclick="regenMeal('${d.date}')">🎲 Regen</button>
+                    <button class="btn btn-s" onclick="hintMeal('${d.date}')">💡 Hint</button>
                 </div>
             </div>
         </div>
     `).join('');
 }
 
-// --- STAPLES & SETTINGS ---
 function renderStapleTags() {
     document.getElementById('stapleTags').innerHTML = (state.staples || []).map((s, i) => `
         <div class="staple-tag">${s}<span onclick="state.staples.splice(${i},1);renderStapleTags();persist();" style="cursor:pointer; margin-left:5px;">×</span></div>
@@ -184,12 +190,13 @@ function renderStapleTags() {
 
 function addStapleTag() {
     const v = document.getElementById('newStaple').value;
-    if(v) { state.staples.push(v); document.getElementById('newStaple').value=''; renderStapleTags(); persist(); }
+    if(v) { state.staples.push(v); document.getElementById('newStaple').value=''; renderStapleTags(); persist(); pushAll(); }
 }
 
 function saveS() {
     state.ak = document.getElementById('ak').value.trim();
     state.su = document.getElementById('su').value.trim();
     persist();
-    alert("Saved");
+    alert("Saved. Syncing...");
+    sync();
 }
