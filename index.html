@@ -33,6 +33,7 @@
         .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
         .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
         .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
+        .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -47,6 +48,7 @@
 
 <div id="v-plan" class="view">
     <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
+    <div id="debugBox" class="debug-log"></div>
     <div id="pCont" style="margin-top:1rem;"></div>
 </div>
 
@@ -106,7 +108,6 @@ function sh(v) {
     if(target) target.classList.add('active');
     const tab = document.querySelector(`.tab[onclick="sh('${v}')"]`);
     if(tab) tab.classList.add('active');
-
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
 }
@@ -209,13 +210,7 @@ async function pushAll() {
 }
 
 function pushItem() {
-    state.ings.push({ 
-        Item: document.getElementById('n').value, 
-        Qty: document.getElementById('q').value, 
-        Unit: document.getElementById('u').value, 
-        Storage: document.getElementById('s').value, 
-        'Use By': document.getElementById('d').value 
-    });
+    state.ings.push({ Item: document.getElementById('n').value, Qty: document.getElementById('q').value, Unit: document.getElementById('u').value, Storage: document.getElementById('s').value, 'Use By': document.getElementById('d').value });
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderI();
     pushAll();
@@ -229,27 +224,45 @@ function eatItem(name) {
 }
 
 async function generate() {
-    const btn = document.getElementById('gBtn');
-    if(!state.ak) return alert("Add API Key");
-    btn.disabled = true;
-    document.getElementById('pCont').innerHTML = "Chef is thinking...";
-    const today = new Date().toLocaleDateString('en-GB');
-    const prompt = `Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
-    Ingredients: ${state.ings.map(i => i.Qty + (i.Unit||'units') + ' ' + i.Item).join(', ')}. Staples: ${state.staples.join(', ')}.
-    RULES: 1. Lunch: MUST BE HEALTHY AND LOW CALORIE. 2. Dinner: Family meal using fridge stock. 3. Sunday: Roast. 4. Start from ${today}.`;
-    try {
-        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const d = await r.json();
-        let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
-        state.plan = JSON.parse(text);
-        localStorage.setItem('ftf_v2', JSON.stringify(state));
-        renderP();
-        pushAll();
-    } catch (e) { document.getElementById('pCont').innerHTML = "Error: " + e.message; }
-    btn.disabled = false;
+  const btn = document.getElementById('gBtn');
+  const debug = document.getElementById('debugBox');
+  if(!state.ak) return alert("Add API Key");
+  btn.disabled = true; debug.style.display = 'none';
+  document.getElementById('pCont').innerHTML = "Chef is thinking...";
+  
+  const today = new Date().toLocaleDateString('en-GB');
+
+  // Including Qty and Units in the prompt so the AI can plan better
+  const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
+  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Qty + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
+  RULES:
+  1. Lunch: Healthy and low calorie. 
+  2. Dinner: Cooked family meal. 
+  3. Sunday: Roast.`;
+
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    
+    const d = await r.json();
+    
+    if (d.error) throw new Error(`${d.error.code}: ${d.error.message}`);
+    if (!d.candidates || !d.candidates[0]) throw new Error("API Response missing candidates. Check API Dashboard.");
+
+    let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+    state.plan = JSON.parse(text);
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderP();
+    pushAll(); 
+  } catch (e) { 
+    debug.style.display = 'block'; 
+    debug.innerText = "Error: " + e.message;
+    document.getElementById('pCont').innerHTML = "Failed to generate plan."; 
+  }
+  btn.disabled = false;
 }
 
 function renderP() {
