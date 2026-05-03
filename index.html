@@ -619,6 +619,47 @@
     </div>
     <button class="btn btn-primary" onclick="saveSheetUrl()">Save &amp; Test</button>
     <span id="sheetTestResult" style="margin-left:0.75rem; font-size:0.85rem;"></span>
+    <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border);">
+      <p style="font-size:0.85rem;color:var(--ink-muted);margin-bottom:0.75rem;">To sync ingredients back to your sheet, you need a Google Apps Script. <a href="#" onclick="document.getElementById('scriptInstructions').style.display='block'; return false;" style="color:var(--accent);">Show me how →</a></p>
+      <label>Apps Script URL (enables write-back)</label>
+      <input type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/..." />
+      <button class="btn btn-secondary" style="margin-top:0.5rem;" onclick="saveScriptUrl()">Save script URL</button>
+      <span id="scriptSaveResult" style="margin-left:0.75rem; font-size:0.85rem;"></span>
+    </div>
+  </div>
+
+  <div class="setup-card" id="scriptInstructions" style="display:none; border-color: var(--accent-border); background: var(--accent-soft);">
+    <h2 style="font-size:1rem;">Setting up sheet write-back</h2>
+    <p style="font-size:0.82rem; color:var(--ink-soft); margin-bottom:0.75rem;">Follow these steps once — takes about 3 minutes:</p>
+    <ol style="font-size:0.82rem; color:var(--ink-soft); padding-left:1.25rem; line-height:2;">
+      <li>Open your Google Sheet</li>
+      <li>Click <strong>Extensions → Apps Script</strong></li>
+      <li>Delete any existing code and paste the script below</li>
+      <li>Click <strong>Deploy → New deployment</strong></li>
+      <li>Type: <strong>Web app</strong>, Execute as: <strong>Me</strong>, Who has access: <strong>Anyone</strong></li>
+      <li>Click Deploy, copy the URL and paste it above</li>
+    </ol>
+    <div style="background:var(--ink);color:#F5F0EB;padding:0.75rem;border-radius:var(--radius-sm);font-family:monospace;font-size:0.72rem;margin-top:0.75rem;white-space:pre-wrap;line-height:1.6;overflow-x:auto;">function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (data.action === 'writeIngredients') {
+    const sheet = ss.getSheetByName('Ingredients') || ss.getActiveSheet();
+    const headers = ['Item','Qty','Storage','Category','Use By','Used'];
+    sheet.clearContents();
+    sheet.getRange(1,1,1,headers.length).setValues([headers]);
+    if (data.rows.length > 0) {
+      sheet.getRange(2,1,data.rows.length,headers.length).setValues(data.rows);
+    }
+  }
+  return ContentService.createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ok:true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+    <button class="btn btn-ghost" style="margin-top:0.75rem; font-size:0.8rem;" onclick="document.getElementById('scriptInstructions').style.display='none'">Close instructions</button>
   </div>
 
   <div class="setup-card">
@@ -709,6 +750,7 @@ function load() {
 load();
 document.getElementById('sheetUrl').value = state.settings.sheetUrl || '';
 document.getElementById('apiKey').value = state.settings.apiKey || '';
+document.getElementById('scriptUrl').value = state.settings.scriptUrl || '';
 document.getElementById('familySpice').value = state.settings.familySpice || 'medium';
 document.getElementById('familyNotes').value = state.settings.familyNotes || '';
 
@@ -827,10 +869,19 @@ function parseDate(str) {
 }
 
 async function writeBackToSheet() {
-  const id = extractSheetId(state.settings.sheetUrl);
-  if (!id) return;
-  // Write via Apps Script would need a deployed script — for now we just keep local state
-  // This is noted as a future enhancement
+  const scriptUrl = state.settings.scriptUrl;
+  if (!scriptUrl) return;
+  const rows = state.ingredients.map(i => [i.name, i.qty, i.storage, i.category, i.useBy || '', i.used ? 'Yes' : 'No']);
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'writeIngredients', rows })
+    });
+  } catch(e) {
+    console.warn('Sheet write-back failed:', e);
+  }
 }
 
 // ─── INGREDIENTS ─────────────────────────────────────────────
@@ -850,6 +901,7 @@ function addIngredient() {
   save();
   renderIngredients();
   checkAlerts();
+  writeBackToSheet();
   document.getElementById('iName').value = '';
   document.getElementById('iQty').value = '';
   document.getElementById('iName').focus();
@@ -860,6 +912,7 @@ function removeIngredient(id) {
   save();
   renderIngredients();
   checkAlerts();
+  writeBackToSheet();
 }
 
 function daysUntil(dateStr) {
@@ -915,6 +968,13 @@ function checkAlerts() {
 }
 
 // ─── SETTINGS ────────────────────────────────────────────────
+function saveScriptUrl() {
+  state.settings.scriptUrl = document.getElementById('scriptUrl').value.trim();
+  save();
+  const el = document.getElementById('scriptSaveResult');
+  el.textContent = '\u2713 Saved'; el.style.color = 'var(--green)';
+}
+
 function saveApiKey() {
   state.settings.apiKey = document.getElementById('apiKey').value.trim();
   save();
@@ -1018,7 +1078,7 @@ Respond ONLY with valid JSON in this exact format:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.settings.apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.settings.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1168,7 +1228,7 @@ Respond ONLY with valid JSON:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.settings.apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.settings.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1230,7 +1290,7 @@ Respond ONLY with valid JSON:
 }`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.settings.apiKey}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${state.settings.apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
