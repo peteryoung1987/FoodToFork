@@ -20,7 +20,8 @@
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
   label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #78716C; }
   input, select { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
-  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+  .btn:active { transform: scale(0.98); opacity: 0.9; }
   .btn-p { background: var(--accent); color: white; }
   .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
   .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px; }
@@ -39,7 +40,7 @@
 <header><h1>Fridge to Fork</h1><span id="status">Ready</span></header>
 
 <div class="tabs">
-  <button class="tab active" onclick="sh('plan')">The Plan</button>
+  <button class="tab active" onclick="sh('plan')">Plan</button>
   <button class="tab" onclick="sh('ings')">Fridge</button>
   <button class="tab" onclick="sh('set')">Settings</button>
 </div>
@@ -52,27 +53,20 @@
 
 <div id="v-ings" class="view">
   <div class="card">
-    <h2>Add Item</h2>
-    <label>Ingredient Name</label><input type="text" id="n" placeholder="e.g. Minced Beef">
+    <label>Ingredient</label><input type="text" id="n" placeholder="e.g. Chicken Thighs">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <input type="number" id="q" value="1"><select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
     </div>
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select><input type="date" id="d">
     </div>
-    <button class="btn btn-p" onclick="push('add')">Save to Sheet</button>
-    <button class="btn btn-s" onclick="sync()">🔄 Refresh</button>
+    <button class="btn btn-p" onclick="push('add')">Add to Fridge</button>
+    <button class="btn btn-s" onclick="sync()">🔄 Refresh List</button>
   </div>
   <div id="iList"></div>
 </div>
 
 <div id="v-set" class="view">
-  <div class="card">
-    <h2>Config</h2>
-    <label>Gemini API Key</label><input type="password" id="ak">
-    <label>Apps Script URL</label><input type="text" id="su">
-    <button class="btn btn-p" onclick="saveS()">Save Config</button>
-  </div>
   <div class="card">
     <h2>Staples Manager</h2>
     <div class="add-staple-row">
@@ -80,7 +74,14 @@
         <button class="btn btn-p" style="width: auto;" onclick="addStapleTag()">Add</button>
     </div>
     <div id="stapleTags" class="staple-container"></div>
-    <button class="btn btn-s" onclick="pushStaples()">Push to Sheet</button>
+    <button class="btn btn-p" style="margin-top:20px;" onclick="pushStaples()">💾 Sync & Save Staples</button>
+    <button class="btn btn-s" onclick="sync()">🔄 Pull Latest</button>
+  </div>
+  <div class="card">
+    <h2>Config</h2>
+    <label>Gemini API Key</label><input type="password" id="ak">
+    <label>Apps Script URL</label><input type="text" id="su">
+    <button class="btn btn-s" onclick="saveS()">Save Credentials</button>
   </div>
 </div>
 
@@ -95,16 +96,23 @@ function sh(v) {
   if(v==='set') renderStapleTags();
 }
 
+// FORMAT DATE PRETTILY
+function fmtD(dStr) {
+    if(!dStr) return '';
+    const d = new Date(dStr);
+    return isNaN(d) ? dStr : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
 function saveS() {
   state.ak = document.getElementById('ak').value.trim();
   state.su = document.getElementById('su').value.trim();
   localStorage.setItem('ftf_v2', JSON.stringify(state));
-  alert("Saved");
+  alert("Settings saved locally.");
 }
 
 function renderStapleTags() {
     const container = document.getElementById('stapleTags');
-    container.innerHTML = state.staples.map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
+    container.innerHTML = (state.staples || []).map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
 }
 
 function addStapleTag() {
@@ -116,63 +124,69 @@ function addStapleTag() {
 function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
 async function pushStaples() {
+    document.getElementById('status').innerText = "Syncing...";
+    // First, grab the latest from the sheet so we don't overwrite others' work
+    await sync(); 
+    // Re-save current state to ensure the new tag we just added is included
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'updateStaples', staples: state.staples }) });
-    alert("Updated on Sheet!");
+    document.getElementById('status').innerText = "Saved";
+    alert("Staples synced with cloud!");
 }
 
 async function sync() {
   if(!state.su) return;
-  const r = await fetch(state.su);
-  const d = await r.json();
-  state.ings = d.ingredients.filter(i => i.Used !== "Yes" && i.Item);
-  state.staples = d.staples || [];
-  localStorage.setItem('ftf_v2', JSON.stringify(state));
-  renderI();
-  document.getElementById('status').innerText = "Synced";
+  try {
+    const r = await fetch(state.su);
+    const d = await r.json();
+    state.ings = d.ingredients.filter(i => i.Used !== "Yes" && i.Item);
+    state.staples = d.staples || [];
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI();
+    renderStapleTags();
+    document.getElementById('status').innerText = "Ready";
+  } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
 }
 
 async function push(action, name = null) {
   const payload = { action, name: name || document.getElementById('n').value, qty: document.getElementById('q').value, storage: document.getElementById('s').value, category: document.getElementById('c').value, useBy: document.getElementById('d').value };
   await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-  setTimeout(sync, 1500);
+  setTimeout(sync, 1000);
 }
 
 function renderI() {
-  document.getElementById('iList').innerHTML = state.ings.map(i => `<div class="ing-item"><div><strong>${i.Item} (x${i.Qty})</strong><br><small>${i.Storage} | ${i['Use By'] || ''}</small></div><button class="btn btn-s" style="width:auto;margin:0" onclick="push('use','${i.Item}')">Eat it</button></div>`).join('');
+  document.getElementById('iList').innerHTML = state.ings.map(i => `
+    <div class="ing-item">
+        <div>
+            <strong>${i.Item} (x${i.Qty})</strong><br>
+            <small>${i.Storage} | Use by: ${fmtD(i['Use By'])}</small>
+        </div>
+        <button class="btn btn-s" style="width:auto;margin:0;padding:0.5rem;" onclick="push('use','${i.Item}')">Eat</button>
+    </div>`).join('');
 }
 
 async function generate() {
   const btn = document.getElementById('gBtn');
   const debug = document.getElementById('debugBox');
   btn.disabled = true; debug.style.display = 'none';
-  document.getElementById('pCont').innerHTML = "Generating plan...";
+  document.getElementById('pCont').innerHTML = "Chef is thinking...";
   
-  const prompt = `Act as a meal planner. Return ONLY a raw JSON object. NO markdown, NO "json" backticks. 
-  Format: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}
-  Plan 7 days using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
-  Rules: Lunch is no-cook assembly for one. Dinner is cooked family meal for three. Sunday must be a Roast.`;
+  const prompt = `Return ONLY JSON format: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}. Plan 7 days using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. Lunch: No cook. Dinner: Cooked. Sunday: Roast.`;
 
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${state.ak}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    
     const d = await r.json();
-    if(d.error) throw new Error(d.error.message);
-    
-    let text = d.candidates[0].content.parts[0].text;
-    // Strip markdown if Gemini ignores instructions
-    text = text.replace(/```json|```/gi, "").trim();
-    
+    let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
   } catch (e) { 
     debug.style.display = 'block'; debug.innerText = e.message;
-    document.getElementById('pCont').innerHTML = "Planning failed. See error box."; 
+    document.getElementById('pCont').innerHTML = "Error generating plan."; 
   }
   btn.disabled = false;
 }
