@@ -138,10 +138,9 @@ function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 function renderI() {
     const list = document.getElementById('iList');
     list.innerHTML = (state.ings || []).map((i, idx) => {
-        // MATCHING HEADERS: Item (A), Category (B), Quantity (C), Unit (D), Storage (E), Use By (F)
         const name = i.Item || 'Unknown';
         const cat = i.Category || ''; 
-        const qty = i.Quantity || ''; 
+        const qty = i.Quantity || i.qty || ''; // FIX: Support both cases
         const unit = i.Unit || '';     
         const store = i.Storage || ''; 
         const exp = i['Use By'] || '';
@@ -161,7 +160,6 @@ function renderI() {
                 <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
             </div>`;
         }
-        // This will now show: "Salmon Fillets | protein-meat | 3 units"
         return `<div class="ing-item">
             <div><strong>${name}</strong><br><small>${cat} | ${qty} ${unit} | ${store} | Exp: ${fmtD(exp)}</small></div>
             <div style="display:flex; gap:5px;">
@@ -222,8 +220,8 @@ async function pushAll() {
 function pushItem() {
     state.ings.push({ 
         Item: document.getElementById('n').value, 
-        Category: '', // Col B
-        Quantity: document.getElementById('q').value, 
+        Category: '', 
+        Quantity: document.getElementById('q').value, // FIX: Capital Q
         Unit: document.getElementById('u').value, 
         Storage: document.getElementById('s').value, 
         'Use By': document.getElementById('d').value 
@@ -248,7 +246,7 @@ async function generate() {
   document.getElementById('pCont').innerHTML = "Chef is thinking...";
   const today = new Date().toLocaleDateString('en-GB');
   const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
-  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Quantity + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
+  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => (i.Quantity||i.qty) + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
   Lunch: Healthy and low calorie. Dinner: Cooked family meal. Sunday: Roast.`;
 
   try {
@@ -258,7 +256,8 @@ async function generate() {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const d = await r.json();
-    let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+    let text = d.candidates[0].content.parts[0].text.replace(/
+```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
