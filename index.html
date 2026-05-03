@@ -19,16 +19,18 @@
   .view.active { display: block; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
   label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #78716C; }
-  input, select { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
+  input, select, textarea { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
+  textarea { height: 120px; resize: none; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
   .btn-p { background: var(--accent); color: white; }
   .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
+  .btn:active { transform: scale(0.98); }
   .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
   .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
   .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
   .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
-  .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
+  .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -84,14 +86,23 @@
 
 <div id="v-set" class="view">
   <div class="card">
-    <h2>Setup</h2>
+    <h2>Core Config</h2>
     <label>Gemini API Key</label><input type="password" id="ak">
     <label>Apps Script URL</label><input type="text" id="su">
     <button class="btn btn-p" onclick="saveS()">Save Config</button>
   </div>
+
+  <div class="card">
+    <h2>Staples Manager</h2>
+    <label>Edit list (One per line)</label>
+    <textarea id="stList"></textarea>
+    <button class="btn btn-s" onclick="updateStaples()">Update Staples on Sheet</button>
+  </div>
 </div>
 
 <script>
+// Fixed model name for 2026 API standards
+const MODEL_ID = "gemini-1.5-flash"; 
 let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [], plan: null, ak: '', su: '' };
 
 function sh(v) {
@@ -99,13 +110,29 @@ function sh(v) {
   document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
   document.getElementById('v-'+v).classList.add('active');
   if(v==='ings') renderI();
+  if(v==='set') document.getElementById('stList').value = state.staples.join('\n');
 }
 
 function saveS() {
   state.ak = document.getElementById('ak').value.trim();
   state.su = document.getElementById('su').value.trim();
   localStorage.setItem('ftf_v2', JSON.stringify(state));
-  alert("Settings Saved");
+  alert("Settings Saved!");
+}
+
+async function updateStaples() {
+    const list = document.getElementById('stList').value.split('\n').filter(x => x.trim());
+    state.staples = list;
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    
+    document.getElementById('status').innerText = "Updating Staples...";
+    await fetch(state.su, { 
+        method: 'POST', 
+        mode: 'no-cors', 
+        body: JSON.stringify({ action: 'updateStaples', staples: list }) 
+    });
+    alert("Staples pushed to Google Sheet");
+    document.getElementById('status').innerText = "Synced";
 }
 
 function fmtDate(dStr) {
@@ -125,7 +152,7 @@ async function sync() {
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderI();
     document.getElementById('status').innerText = "Synced";
-  } catch(e) { document.getElementById('status').innerText = "Error"; }
+  } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
 }
 
 async function push(action, name = null) {
@@ -148,43 +175,48 @@ async function push(action, name = null) {
 function renderI() {
   document.getElementById('iList').innerHTML = state.ings.map(i => `
     <div class="ing-item">
-      <div><strong>${i.Item} (x${i.Qty || 1})</strong><small style="color:var(--accent); font-size:0.75rem;">${i.Storage} | ${fmtDate(i['Use By'])}</small></div>
+      <div><strong>${i.Item} (x${i.Qty || 1})</strong><br><small style="color:var(--accent); font-size:0.75rem;">${i.Storage} | ${fmtDate(i['Use By'])}</small></div>
       <button class="btn btn-s" style="width:auto; margin:0;" onclick="push('use', '${i.Item}')">Eat it</button>
     </div>
   `).join('');
 }
 
 async function generate() {
+  if(!state.ak) return alert("Missing API Key in Settings!");
   const btn = document.getElementById('gBtn');
   const debug = document.getElementById('debugBox');
   btn.disabled = true; debug.style.display = 'none';
-  document.getElementById('pCont').innerHTML = "Generating...";
+  document.getElementById('pCont').innerHTML = "Cooking up a plan...";
 
-  const prompt = `Plan 7 days of meals for Pete. 
-  Solo Lunch: Assembly only, NO COOKING. 
-  Family Dinner: Cooked for 3, mild spice. 
+  const prompt = `Plan 7 days of meals. 
+  Solo Lunch: NO COOKING, assembly only. 
+  Family Dinner: Cooked for 3, kid-friendly. 
   Sunday: Traditional Roast. 
-  Ingredients: ${state.ings.map(i => i.Item).join(', ')}. 
-  Staples: ${state.staples.join(', ')}.
+  Main Ingredients: ${state.ings.map(i => i.Item + ' (Use by ' + i['Use By'] + ')').join(', ')}. 
+  Staples available: ${state.staples.join(', ')}.
   Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
 
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/${MODEL_ID}:generateContent?key=${state.ak}`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
     });
-    const d = await r.json();
     
-    if(!d.candidates) {
+    const d = await r.json();
+    if(d.error) {
         debug.style.display = 'block';
-        debug.innerText = "API Response Error: " + JSON.stringify(d);
-        throw new Error("No candidates returned.");
+        debug.innerText = "Error " + d.error.code + ": " + d.error.message;
+        throw new Error(d.error.message);
     }
 
     state.plan = JSON.parse(d.candidates[0].content.parts[0].text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
-  } catch (e) { document.getElementById('pCont').innerHTML = "Planning failed. Check debug log."; }
+  } catch (e) { 
+      document.getElementById('pCont').innerHTML = "Planning failed. Check the red box for why.";
+      console.error(e);
+  }
   btn.disabled = false;
 }
 
