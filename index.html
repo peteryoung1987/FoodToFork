@@ -76,8 +76,16 @@
 
     .recipe-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:white;z-index:2000;overflow-y:auto;padding:1.5rem 1rem;}
     .recipe-inner{max-width:560px;margin:0 auto;padding-bottom:60px;}
-    .recipe-title{font-family:Georgia,'Times New Roman',serif;margin-bottom:1.25rem;}
-    .recipe-body{line-height:1.7;color:#44403C;white-space:pre-wrap;}
+    .recipe-title{font-family:Georgia,'Times New Roman',serif;margin-bottom:1.25rem;font-size:1.6rem;}
+    .recipe-body{line-height:1.7;color:#44403C;}
+    .recipe-body p{margin-bottom:0.6rem;}
+    .recipe-section{font-family:Georgia,'Times New Roman',serif;font-size:1.1rem;margin:1.5rem 0 0.6rem;color:var(--ink);border-bottom:1px solid var(--border);padding-bottom:0.3rem;}
+    .ing-list{padding-left:1.2rem;margin-bottom:1rem;}
+    .ing-list li{margin-bottom:0.4rem;}
+    .method-list{padding-left:1.2rem;margin-bottom:1rem;}
+    .method-step{margin-bottom:0.75rem;padding-left:0.3rem;}
+    .chefs-tip-label{font-size:0.9rem;font-weight:700;margin:1.5rem 0 0.4rem;color:var(--accent);}
+    .recipe-body .chefs-tip-label + p{background:#FFF7ED;border-left:3px solid var(--accent);padding:0.75rem 1rem;border-radius:0 8px 8px 0;}
   </style>
 </head>
 <body>
@@ -459,18 +467,47 @@ Return ONLY valid JSON, no markdown fences:
   btn.disabled = false; btn.innerText = '✨ Generate 7-Day Plan';
 }
 
+function renderMarkdown(md) {
+  // Strip shopping list section entirely
+  md = md.replace(/###\s*\*{0,2}Shopping List\*{0,2}[\s\S]*?(?=###|$)/gi, '');
+  // Strip horizontal rules
+  md = md.replace(/^---+$/gm, '');
+  // Chef tip heading
+  md = md.replace(/###\s*\*{0,2}Chef['\u2019]s Tip\*{0,2}\s*/gi, '<h4 class="chefs-tip-label">\u{1F468}\u200D\u{1F373} Chef\'s Tip</h4>');
+  // H3 headings
+  md = md.replace(/^###\s*\*{0,2}(.+?)\*{0,2}$/gm, '<h3 class="recipe-section">$1</h3>');
+  // H2 headings
+  md = md.replace(/^##\s+(.+)$/gm, '<h2 class="recipe-section">$1</h2>');
+  // Bold
+  md = md.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  // Numbered list items -> wrap in ol
+  md = md.replace(/^\d+\.\s+(.+)$/gm, '<li class="method-step">$1</li>');
+  md = md.replace(/(<li class="method-step">.*<\/li>\n?)+/g, m => '<ol class="method-list">' + m + '</ol>');
+  // Bullet list items -> wrap in ul
+  md = md.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
+  md = md.replace(/(<li>.*<\/li>\n?)+/g, m => '<ul class="ing-list">' + m + '</ul>');
+  // Remaining lines as paragraphs
+  md = md.split('\n').map(line => {
+    line = line.trim();
+    if (!line) return '';
+    if (line.startsWith('<')) return line;
+    return '<p>' + line + '</p>';
+  }).join('\n');
+  return md;
+}
+
 async function getRecipe(meal) {
   if (!meal) return;
   const overlay = document.createElement('div');
   overlay.className = 'recipe-overlay'; overlay.id = 'recipe-overlay';
-  overlay.innerHTML = `<div class="recipe-inner"><p style="text-align:center;padding:3rem;">⏳ Preparing ${meal}…</p></div>`;
+  overlay.innerHTML = `<div class="recipe-inner"><p style="text-align:center;padding:3rem;">⏳ Preparing ${meal}\u2026</p></div>`;
   document.body.appendChild(overlay);
 
   const prompt = `Write a clear, friendly recipe for "${meal}" using UK measurements.
 Available: ${state.ings.map(i=>i.Item).join(', ')}. Staples: ${state.staples.join(', ')}.
 Standard UK pantry available.
-Include: ingredient list, method, short shopping list with approximate UK prices for anything not in inventory.
-Tone: direct, warm, no fluff.`;
+Include ingredients list and method only. No shopping list.
+Tone: direct, warm, no fluff. Use markdown with ### headings and bullet/numbered lists.`;
 
   try {
     const d = await gemini(prompt);
@@ -478,13 +515,13 @@ Tone: direct, warm, no fluff.`;
     overlay.innerHTML = `
       <div class="recipe-inner">
         <h1 class="recipe-title">${meal}</h1>
-        <div class="recipe-body">${text.replace(/\n/g,'<br>')}</div>
-        <button class="btn btn-p" style="margin-top:2rem;" onclick="document.getElementById('recipe-overlay').remove()">← Back to Plan</button>
+        <div class="recipe-body">${renderMarkdown(text)}</div>
+        <button class="btn btn-p" style="margin-top:2rem;" onclick="document.getElementById('recipe-overlay').remove()">\u2190 Back to Plan</button>
       </div>`;
   } catch(e) {
     overlay.innerHTML = `<div class="recipe-inner" style="text-align:center;">
       <p>Could not load recipe.</p>
-      <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">← Back</button>
+      <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">\u2190 Back</button>
     </div>`;
   }
 }
