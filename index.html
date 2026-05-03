@@ -53,7 +53,7 @@
 <div id="v-ings" class="view">
   <div class="card">
     <h2>Add Item</h2>
-    <label>Ingredient Name</label><input type="text" id="n" placeholder="e.g. Minced Beef">
+    <label>Ingredient Name</label><input type="text" id="n" placeholder="e.g. Salmon">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <input type="number" id="q" value="1"><select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
     </div>
@@ -81,7 +81,6 @@
     </div>
     <div id="stapleTags" class="staple-container"></div>
     <button class="btn btn-s" onclick="pushStaples()">Push to Sheet</button>
-    <button class="btn btn-s" style="color:red; border-color:#fecaca;" onclick="if(confirm('Clear all staples?')) {state.staples=[]; renderStapleTags();}">Clear All</button>
   </div>
 </div>
 
@@ -151,12 +150,13 @@ async function generate() {
   const prompt = `Plan 7 days. Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast. Ingredients: ${state.ings.map(i => i.Item).join(', ')}. Staples: ${state.staples.join(', ')}. Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
 
   try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+    // UPDATED TO STABLE v1 ENDPOINT
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }], 
-        generation_config: { response_mime_type: "application/json" } 
+        generationConfig: { response_mime_type: "application/json" } 
       })
     });
     const d = await r.json();
