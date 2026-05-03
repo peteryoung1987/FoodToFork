@@ -143,27 +143,33 @@ function renderI() {
     const list = document.getElementById('iList');
     if(!list) return;
     list.innerHTML = (state.ings || []).map((i, idx) => {
+        // Mapping from your Sheet: A:Item, B:Category, C:Quantity, D:Unit, E:Storage, F:Use By
+        const name = i.Item || '';
+        const qty = i.Quantity || 0;
+        const unit = i.Unit || 'units';
+        const expiry = i['Use By'] || '';
+
         if(editingIdx === idx) {
             return `<div class="edit-card">
-                <label>Name</label><input type="text" id="ed-n" value="${i.Item || ''}">
+                <label>Name</label><input type="text" id="ed-n" value="${name}">
                 <div class="ing-row">
-                    <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${i.Qty || 0}"></div>
+                    <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${qty}"></div>
                     <div style="flex:1"><label>Unit</label>
                         <select id="ed-u">
-                            <option value="units" ${(i.Unit === 'units' || !i.Unit) ? 'selected' : ''}>units</option>
-                            <option value="g" ${i.Unit === 'g' ? 'selected' : ''}>g</option>
+                            <option value="units" ${unit === 'units' ? 'selected' : ''}>units</option>
+                            <option value="g" ${unit === 'g' ? 'selected' : ''}>g</option>
                         </select>
                     </div>
                 </div>
-                <label>Use By</label><input type="date" id="ed-d" value="${i['Use By'] ? new Date(i['Use By']).toISOString().split('T')[0] : ''}">
+                <label>Use By</label><input type="date" id="ed-d" value="${expiry ? new Date(expiry).toISOString().split('T')[0] : ''}">
                 <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
             </div>`;
         }
         return `<div class="ing-item">
-            <div><strong>${i.Item}</strong><br><small>${i.Qty || 0}${i.Unit || ' units'} | Exp: ${fmtD(i['Use By'])}</small></div>
+            <div><strong>${name}</strong><br><small>${qty}${unit} | Exp: ${fmtD(expiry)}</small></div>
             <div style="display:flex; gap:5px;">
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
-                <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${i.Item}')">Eat</button>
+                <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${name}')">Eat</button>
             </div>
         </div>`;
     }).join('');
@@ -173,12 +179,14 @@ function startEdit(idx) { editingIdx = idx; renderI(); }
 function cancelEdit() { editingIdx = null; renderI(); }
 
 function confirmEdit(idx) {
+    // Ensuring order matches Sheet: Item, Category, Quantity, Unit, Storage, Use By
     state.ings[idx] = { 
-        Item: document.getElementById('ed-n').value, 
-        Qty: document.getElementById('ed-q').value, 
+        Item: document.getElementById('ed-n').value,
+        Category: state.ings[idx].Category || '', 
+        Quantity: document.getElementById('ed-q').value, 
         Unit: document.getElementById('ed-u').value, 
-        'Use By': document.getElementById('ed-d').value, 
-        Storage: state.ings[idx].Storage 
+        Storage: state.ings[idx].Storage || 'Fridge',
+        'Use By': document.getElementById('ed-d').value
     };
     editingIdx = null;
     localStorage.setItem('ftf_v2', JSON.stringify(state));
@@ -210,7 +218,15 @@ async function pushAll() {
 }
 
 function pushItem() {
-    state.ings.push({ Item: document.getElementById('n').value, Qty: document.getElementById('q').value, Unit: document.getElementById('u').value, Storage: document.getElementById('s').value, 'Use By': document.getElementById('d').value });
+    // New item order to match your Sheet columns
+    state.ings.push({ 
+        Item: document.getElementById('n').value, 
+        Category: '', // Placeholder for column B
+        Quantity: document.getElementById('q').value, 
+        Unit: document.getElementById('u').value, 
+        Storage: document.getElementById('s').value, 
+        'Use By': document.getElementById('d').value 
+    });
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderI();
     pushAll();
@@ -229,16 +245,11 @@ async function generate() {
   if(!state.ak) return alert("Add API Key");
   btn.disabled = true; debug.style.display = 'none';
   document.getElementById('pCont').innerHTML = "Chef is thinking...";
-  
   const today = new Date().toLocaleDateString('en-GB');
 
-  // Including Qty and Units in the prompt so the AI can plan better
   const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
-  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Qty + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
-  RULES:
-  1. Lunch: Healthy and low calorie. 
-  2. Dinner: Cooked family meal. 
-  3. Sunday: Roast.`;
+  Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Quantity + (i.Unit||'units') + ' ' + i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
+  Lunch: Healthy and low calorie. Dinner: Cooked family meal. Sunday: Roast.`;
 
   try {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
@@ -246,12 +257,8 @@ async function generate() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    
     const d = await r.json();
-    
     if (d.error) throw new Error(`${d.error.code}: ${d.error.message}`);
-    if (!d.candidates || !d.candidates[0]) throw new Error("API Response missing candidates. Check API Dashboard.");
-
     let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
