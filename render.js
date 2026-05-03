@@ -1,3 +1,76 @@
+// --- INITIALIZATION ---
+let state = { ings: [], staples: [], plan: { days: [] }, ak: '', su: '' };
+
+// Load from LocalStorage on startup
+const saved = localStorage.getItem('ftf_v2');
+if (saved) state = JSON.parse(saved);
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('ak').value = state.ak || '';
+    document.getElementById('su').value = state.su || '';
+    if (state.su) sync(); // Auto-pull on load
+    sh('plan'); // Start on the plan view
+});
+
+function persist() {
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+}
+
+// --- TAB SYSTEM ---
+function sh(v) {
+    document.querySelectorAll('.view, .tab').forEach(e => e.classList.remove('active'));
+    document.getElementById('v-' + v).classList.add('active');
+    document.getElementById('t-' + v).classList.add('active');
+    if(v === 'ings') renderFridge();
+    if(v === 'set') renderStapleTags();
+    if(v === 'plan') renderMealPlan();
+}
+
+// --- SYNC LOGIC ---
+async function sync() {
+    if(!state.su) return;
+    document.getElementById('status').innerText = "Syncing...";
+    try {
+        const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
+        const d = await r.json();
+        state.ings = d.ingredients || [];
+        state.staples = d.staples || [];
+        if(d.plan) state.plan = d.plan;
+        persist();
+        renderFridge(); 
+        renderMealPlan();
+    } catch(e) { console.error("Sync failed:", e); }
+    document.getElementById('status').innerText = "Ready";
+}
+
+async function pushAll() {
+    if(!state.su) return;
+    document.getElementById('status').innerText = "Saving...";
+    try {
+        await fetch(state.su, { 
+            method: 'POST', 
+            mode: 'no-cors', 
+            body: JSON.stringify({ action: 'pushAll', ...state }) 
+        });
+    } catch(e) { console.error("Push failed:", e); }
+    document.getElementById('status').innerText = "Ready";
+}
+
+// --- FRIDGE LOGIC ---
+function pushItem() {
+    const n = document.getElementById('n').value;
+    const q = document.getElementById('q').value;
+    const u = document.getElementById('u').value;
+    
+    if(!n) return alert("Enter an item name");
+
+    state.ings.push({ Item: n, Qty: q, Unit: u, Category: 'General' });
+    document.getElementById('n').value = ''; // Reset input
+    persist();
+    renderFridge();
+    pushAll();
+}
+
 function renderFridge() {
     const list = document.getElementById('iList');
     if (!state.ings || state.ings.length === 0) {
@@ -5,160 +78,106 @@ function renderFridge() {
         return;
     }
 
-    // Sort by Expiry (soonest first)
-    const sorted = [...state.ings].sort((a, b) => {
-        if (!a['Use By']) return 1;
-        if (!b['Use By']) return -1;
-        return new Date(a['Use By']) - new Date(b['Use By']);
-    });
-
-    list.innerHTML = sorted.map((item) => {
-        const realIdx = state.ings.findIndex(i => i === item);
-        const expiryInfo = getExpiryLabel(item['Use By']);
-        
-        return `
-            <div class="ing-card" id="ing-row-${realIdx}">
-                <div class="ing-item">
-                    <div onclick="showInlineEdit(${realIdx})" style="cursor:pointer; flex:1;">
-                        <div style="font-weight:700;">${item.Item}</div>
-                        <div class="ing-meta">${item.Qty} ${item.Unit} • ${item.Category}</div>
-                        ${expiryInfo}
-                    </div>
-                    <button class="btn btn-s" style="width:auto; color:var(--warn); border:none;" onclick="deleteItem(${realIdx})">✕</button>
+    list.innerHTML = state.ings.map((item, idx) => `
+        <div class="ing-card" id="ing-row-${idx}" style="background:white; border:1px solid var(--border); border-radius:10px; margin-bottom:0.75rem; padding:1rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div onclick="showInlineEdit(${idx})" style="cursor:pointer; flex:1;">
+                    <strong>${item.Item}</strong><br>
+                    <small>${item.Qty} ${item.Unit || 'units'}</small>
                 </div>
-                <div id="edit-ctrl-${realIdx}" class="inline-edit-panel" style="display:none; padding: 0 10px 10px 10px;">
-                    <!-- Contextual Edit Form Injected Here -->
-                </div>
+                <button class="btn btn-s" style="width:auto; color:red; border:none; margin:0;" onclick="eatItem('${item.Item}')">✕</button>
             </div>
-        `;
-    }).join('');
+            <div id="edit-ctrl-${idx}" class="inline-edit-panel" style="display:none; padding:10px; background:#f9f9f9; border-radius:8px; margin-top:10px; border: 1px dashed var(--border);">
+                <!-- Edit form injected here -->
+            </div>
+        </div>
+    `).join('');
 }
 
 function showInlineEdit(idx) {
-    document.querySelectorAll('.inline-edit-panel').forEach(p => {
-        p.style.display = 'none';
-        p.innerHTML = '';
-    });
-
     const panel = document.getElementById(`edit-ctrl-${idx}`);
     const item = state.ings[idx];
-    
-    let dateVal = "";
-    if (item['Use By']) {
-        const d = new Date(item['Use By']);
-        dateVal = !isNaN(d) ? d.toISOString().split('T')[0] : "";
-    }
+    if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
 
     panel.innerHTML = `
-        <div class="card" style="margin-top:0; border-style:dashed; background:#f9f9f9;">
-            <div class="grid-2">
-                <div><label>Qty</label><input type="number" id="edit-q-${idx}" value="${item.Qty}"></div>
-                <div>
-                    <label>Unit</label>
-                    <select id="edit-u-${idx}">
-                        <option value="units" ${item.Unit === 'units' ? 'selected' : ''}>units</option>
-                        <option value="g" ${item.Unit === 'g' ? 'selected' : ''}>g</option>
-                        <option value="ml" ${item.Unit === 'ml' ? 'selected' : ''}>ml</option>
-                    </select>
-                </div>
-            </div>
-            <label>Use By</label>
-            <input type="date" id="edit-ub-${idx}" value="${dateVal}">
-            <div class="grid-2" style="margin-top:10px;">
-                <button class="btn btn-p" onclick="saveInlineUpdate(${idx})">Update Row</button>
-                <button class="btn btn-s" onclick="document.getElementById('edit-ctrl-${idx}').style.display='none'">Cancel</button>
+        <div style="display:flex; gap:10px; margin-bottom:10px;">
+            <div style="flex:1"><label>Qty</label><input type="number" id="edit-q-${idx}" value="${item.Qty}" style="margin-bottom:0;"></div>
+            <div style="flex:1"><label>Unit</label>
+                <select id="edit-u-${idx}" style="margin-bottom:0;">
+                    <option ${item.Unit === 'units' ? 'selected':''}>units</option>
+                    <option ${item.Unit === 'g' ? 'selected':''}>g</option>
+                    <option ${item.Unit === 'ml' ? 'selected':''}>ml</option>
+                </select>
             </div>
         </div>
+        <button class="btn btn-p" onclick="saveInlineUpdate(${idx})">Update Row</button>
     `;
     panel.style.display = 'block';
 }
 
-async function saveInlineUpdate(idx) {
+function saveInlineUpdate(idx) {
     state.ings[idx].Qty = document.getElementById(`edit-q-${idx}`).value;
     state.ings[idx].Unit = document.getElementById(`edit-u-${idx}`).value;
-    state.ings[idx]['Use By'] = document.getElementById(`edit-ub-${idx}`).value;
-
     persist();
     renderFridge();
-    await syncToSheet(); 
+    pushAll();
 }
 
+function eatItem(name) {
+    state.ings = state.ings.filter(i => i.Item !== name);
+    persist();
+    renderFridge();
+    pushAll();
+}
+
+// --- MEAL PLAN RENDER ---
 function renderMealPlan() {
     const cont = document.getElementById('pCont');
-    if (!state.plan || !state.plan.days) return;
-
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
+    if(!state.plan || !state.plan.days) return;
+    const today = new Date().setHours(0,0,0,0);
+    
     const futureDays = state.plan.days.filter(d => {
         const p = d.date.split('/');
         return new Date(p[2], p[1]-1, p[0]) >= today;
+    }).sort((a,b) => {
+        const ad = a.date.split('/'); const bd = b.date.split('/');
+        return new Date(ad[2], ad[1]-1, ad[0]) - new Date(bd[2], bd[1]-1, bd[0]);
     });
 
     cont.innerHTML = futureDays.map(d => `
-        <div class="card" style="padding:0; overflow:hidden;">
-            <div style="background:var(--ink); color:white; padding:10px 20px; font-family:Playfair Display;">
-                ${d.day} <span style="font-size:0.8rem; opacity:0.7;">(${d.date})</span>
+        <div class="day-card">
+            <div class="day-h">${d.day} (${d.date})</div>
+            <div class="m-box">
+                <label>Lunch</label>
+                <p onclick="getRecipe('${d.lunch}')" style="cursor:pointer; text-decoration:underline;">${d.lunch}</p>
             </div>
-            <div style="padding:15px;">
-                <label>Lunch (Solo)</label>
-                <div class="meal-link" onclick="getRecipe('${d.lunch}')">${d.lunch}</div>
-                
-                <label style="margin-top:15px;">Dinner (Family)</label>
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div class="meal-link" onclick="getRecipe('${d.dinner}')">${d.dinner}</div>
-                    <button class="btn btn-s" style="width:auto; padding:4px 8px; font-size:0.7rem;" onclick="regenMeal('${d.date}')">🎲</button>
+            <div class="m-box">
+                <label>Dinner</label>
+                <p onclick="getRecipe('${d.dinner}')" style="cursor:pointer; text-decoration:underline;">${d.dinner}</p>
+                <div style="margin-top:10px; display:flex; gap:5px;">
+                    <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="regenMeal('${d.date}')">🎲 Regen</button>
+                    <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="hintMeal('${d.date}')">💡 Hint</button>
                 </div>
             </div>
         </div>
     `).join('');
 }
 
-function getExpiryLabel(dateStr) {
-    if (!dateStr) return '';
-    const today = new Date();
-    today.setHours(0,0,0,0);
-    const exp = new Date(dateStr);
-    if (isNaN(exp)) return '';
-
-    const diff = Math.ceil((exp - today) / (1000 * 60 * 60 * 24));
-    let cls = '';
-    let txt = '';
-
-    if (diff < 0) { txt = `Expired ${Math.abs(diff)}d ago`; cls = 'expiry-critical'; }
-    else if (diff === 0) { txt = 'Expires TODAY'; cls = 'expiry-critical'; }
-    else if (diff <= 2) { txt = `Expires in ${diff}d`; cls = 'expiry-soon'; }
-    else { txt = `Use by ${exp.toLocaleDateString('en-GB', {day:'numeric', month:'short'})}`; }
-
-    return `<span class="expiry-tag ${cls}">${txt}</span>`;
-}
-
-// --- STAPLES LOGIC (RESTORED) ---
-
+// --- STAPLES & SETTINGS ---
 function renderStapleTags() {
-    const cont = document.getElementById('stapleTags');
-    if(!cont) return;
-    cont.innerHTML = (state.staples || []).map((s, i) => `
-        <div class="staple-tag">${s}<span onclick="removeStaple(${i})">×</span></div>
+    document.getElementById('stapleTags').innerHTML = (state.staples || []).map((s, i) => `
+        <div class="staple-tag">${s}<span onclick="state.staples.splice(${i},1);renderStapleTags();persist();" style="cursor:pointer; margin-left:5px;">×</span></div>
     `).join('');
 }
 
-function addStaple() {
-    const input = document.getElementById('newStaple');
-    const val = input.value.trim();
-    if(val) {
-        if(!state.staples) state.staples = [];
-        state.staples.push(val);
-        input.value = '';
-        renderStapleTags();
-        persist();
-        syncToSheet();
-    }
+function addStapleTag() {
+    const v = document.getElementById('newStaple').value;
+    if(v) { state.staples.push(v); document.getElementById('newStaple').value=''; renderStapleTags(); persist(); }
 }
 
-function removeStaple(i) {
-    state.staples.splice(i, 1);
-    renderStapleTags();
+function saveS() {
+    state.ak = document.getElementById('ak').value.trim();
+    state.su = document.getElementById('su').value.trim();
     persist();
-    syncToSheet();
+    alert("Credentials Saved");
 }
