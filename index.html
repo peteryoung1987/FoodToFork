@@ -138,26 +138,32 @@ function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 function renderI() {
     const list = document.getElementById('iList');
     list.innerHTML = (state.ings || []).map((i, idx) => {
-        // Headers from image_fd4185.png: A:Item, B:Category, C:Quantity, D:Unit, E:Storage, F:Use By
+        // MATCHING HEADERS: Item (A), Category (B), Quantity (C), Unit (D), Storage (E), Use By (F)
         const name = i.Item || 'Unknown';
-        const qty = i.Quantity || '';
-        const unit = i.Unit || '';
-        const store = i.Storage || '';
+        const cat = i.Category || ''; 
+        const qty = i.Quantity || ''; 
+        const unit = i.Unit || '';     
+        const store = i.Storage || ''; 
         const exp = i['Use By'] || '';
 
         if(editingIdx === idx) {
             return `<div class="edit-card">
                 <label>Name</label><input type="text" id="ed-n" value="${name}">
+                <label>Category</label><input type="text" id="ed-cat" value="${cat}">
                 <div class="ing-row">
                     <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${qty}"></div>
                     <div style="flex:1"><label>Unit</label><input type="text" id="ed-u" value="${unit}"></div>
                 </div>
-                <label>Use By</label><input type="date" id="ed-d" value="${exp ? new Date(exp).toISOString().split('T')[0] : ''}">
+                <div class="ing-row">
+                    <div style="flex:1"><label>Storage</label><input type="text" id="ed-s" value="${store}"></div>
+                    <div style="flex:1"><label>Use By</label><input type="date" id="ed-d" value="${exp ? new Date(exp).toISOString().split('T')[0] : ''}"></div>
+                </div>
                 <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
             </div>`;
         }
+        // This will now show: "Salmon Fillets | protein-meat | 3 units"
         return `<div class="ing-item">
-            <div><strong>${name}</strong><br><small>${qty} ${unit} | ${store} | Exp: ${fmtD(exp)}</small></div>
+            <div><strong>${name}</strong><br><small>${cat} | ${qty} ${unit} | ${store} | Exp: ${fmtD(exp)}</small></div>
             <div style="display:flex; gap:5px;">
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
                 <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${name}')">Eat</button>
@@ -166,16 +172,13 @@ function renderI() {
     }).join('');
 }
 
-function startEdit(idx) { editingIdx = idx; renderI(); }
-function cancelEdit() { editingIdx = null; renderI(); }
-
 function confirmEdit(idx) {
     state.ings[idx] = { 
         Item: document.getElementById('ed-n').value,
-        Category: state.ings[idx].Category || '', // Maintain col B
+        Category: document.getElementById('ed-cat').value, 
         Quantity: document.getElementById('ed-q').value, 
         Unit: document.getElementById('ed-u').value, 
-        Storage: state.ings[idx].Storage,
+        Storage: document.getElementById('ed-s').value,
         'Use By': document.getElementById('ed-d').value
     };
     editingIdx = null;
