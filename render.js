@@ -1,15 +1,14 @@
 // --- INITIALIZATION ---
 let state = { ings: [], staples: [], plan: { days: [] }, ak: '', su: '' };
 
-// Load from LocalStorage on startup
 const saved = localStorage.getItem('ftf_v2');
 if (saved) state = JSON.parse(saved);
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('ak').value = state.ak || '';
     document.getElementById('su').value = state.su || '';
-    if (state.su) sync(); // Auto-pull on load
-    sh('plan'); // Start on the plan view
+    if (state.su) sync(); 
+    sh('plan');
 });
 
 function persist() {
@@ -39,21 +38,37 @@ async function sync() {
         persist();
         renderFridge(); 
         renderMealPlan();
-    } catch(e) { console.error("Sync failed:", e); }
+    } catch(e) { 
+        console.error("Sync failed:", e);
+        document.getElementById('status').innerText = "Sync Error";
+        return;
+    }
     document.getElementById('status').innerText = "Ready";
 }
 
 async function pushAll() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Saving...";
+    
+    const payload = JSON.stringify({ 
+        action: 'pushAll', 
+        ings: state.ings, 
+        staples: state.staples, 
+        plan: state.plan 
+    });
+
     try {
+        // Removed no-cors to allow the body to transmit correctly
         await fetch(state.su, { 
-            method: 'POST', 
-            mode: 'no-cors', 
-            body: JSON.stringify({ action: 'pushAll', ...state }) 
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // GAS prefers text/plain for POSTs
+            body: payload
         });
-    } catch(e) { console.error("Push failed:", e); }
-    document.getElementById('status').innerText = "Ready";
+        document.getElementById('status').innerText = "Ready";
+    } catch(e) { 
+        console.error("Push failed:", e); 
+        document.getElementById('status').innerText = "Save Error";
+    }
 }
 
 // --- FRIDGE LOGIC ---
@@ -61,11 +76,10 @@ function pushItem() {
     const n = document.getElementById('n').value;
     const q = document.getElementById('q').value;
     const u = document.getElementById('u').value;
-    
-    if(!n) return alert("Enter an item name");
+    if(!n) return alert("Enter item name");
 
     state.ings.push({ Item: n, Qty: q, Unit: u, Category: 'General' });
-    document.getElementById('n').value = ''; // Reset input
+    document.getElementById('n').value = '';
     persist();
     renderFridge();
     pushAll();
@@ -74,12 +88,12 @@ function pushItem() {
 function renderFridge() {
     const list = document.getElementById('iList');
     if (!state.ings || state.ings.length === 0) {
-        list.innerHTML = "<p style='text-align:center; opacity:0.5;'>The fridge is empty.</p>";
+        list.innerHTML = "<p style='text-align:center; opacity:0.5;'>Empty fridge.</p>";
         return;
     }
 
     list.innerHTML = state.ings.map((item, idx) => `
-        <div class="ing-card" id="ing-row-${idx}" style="background:white; border:1px solid var(--border); border-radius:10px; margin-bottom:0.75rem; padding:1rem;">
+        <div class="ing-card" style="background:white; border:1px solid var(--border); border-radius:10px; margin-bottom:0.75rem; padding:1rem;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
                 <div onclick="showInlineEdit(${idx})" style="cursor:pointer; flex:1;">
                     <strong>${item.Item}</strong><br>
@@ -87,9 +101,7 @@ function renderFridge() {
                 </div>
                 <button class="btn btn-s" style="width:auto; color:red; border:none; margin:0;" onclick="eatItem('${item.Item}')">✕</button>
             </div>
-            <div id="edit-ctrl-${idx}" class="inline-edit-panel" style="display:none; padding:10px; background:#f9f9f9; border-radius:8px; margin-top:10px; border: 1px dashed var(--border);">
-                <!-- Edit form injected here -->
-            </div>
+            <div id="edit-ctrl-${idx}" class="inline-edit-panel" style="display:none; padding:10px; background:#f9f9f9; border-radius:8px; margin-top:10px; border: 1px dashed var(--border);"></div>
         </div>
     `).join('');
 }
@@ -110,7 +122,7 @@ function showInlineEdit(idx) {
                 </select>
             </div>
         </div>
-        <button class="btn btn-p" onclick="saveInlineUpdate(${idx})">Update Row</button>
+        <button class="btn btn-p" onclick="saveInlineUpdate(${idx})">Update</button>
     `;
     panel.style.display = 'block';
 }
@@ -145,13 +157,13 @@ function renderMealPlan() {
     });
 
     cont.innerHTML = futureDays.map(d => `
-        <div class="day-card">
-            <div class="day-h">${d.day} (${d.date})</div>
-            <div class="m-box">
+        <div class="day-card" style="background:white; border:1px solid var(--border); border-radius:12px; margin-bottom:1.25rem; overflow:hidden;">
+            <div class="day-h" style="background:var(--ink); color:white; padding:0.75rem 1.25rem;">${d.day} (${d.date})</div>
+            <div class="m-box" style="padding:1rem; border-bottom:1px solid var(--border);">
                 <label>Lunch</label>
                 <p onclick="getRecipe('${d.lunch}')" style="cursor:pointer; text-decoration:underline;">${d.lunch}</p>
             </div>
-            <div class="m-box">
+            <div class="m-box" style="padding:1rem;">
                 <label>Dinner</label>
                 <p onclick="getRecipe('${d.dinner}')" style="cursor:pointer; text-decoration:underline;">${d.dinner}</p>
                 <div style="margin-top:10px; display:flex; gap:5px;">
@@ -179,5 +191,5 @@ function saveS() {
     state.ak = document.getElementById('ak').value.trim();
     state.su = document.getElementById('su').value.trim();
     persist();
-    alert("Credentials Saved");
+    alert("Saved");
 }
