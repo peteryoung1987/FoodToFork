@@ -173,20 +173,36 @@ async function generate() {
   
   const prompt = `Return ONLY JSON format: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}. Plan 7 days using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. Lunch: No cook. Dinner: Cooked. Sunday: Roast.`;
 
-  try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${state.ak}`, {
+try {
+    // 1. Updated URL to v1 stable
+    // 2. Updated Model to gemini-3-flash (from your allowance list)
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${state.ak}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+      body: JSON.stringify({ 
+        contents: [{ parts: [{ text: prompt }] }] 
+      })
     });
+    
     const d = await r.json();
+
+    // Catch the error properly so it doesn't just say "undefined"
+    if (d.error) {
+        throw new Error(`${d.error.code}: ${d.error.message}`);
+    }
+
+    if (!d.candidates || !d.candidates[0]) {
+        throw new Error("No response from AI. Check your API key or safety settings.");
+    }
+
     let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
   } catch (e) { 
-    debug.style.display = 'block'; debug.innerText = e.message;
-    document.getElementById('pCont').innerHTML = "Error generating plan."; 
+    debug.style.display = 'block'; 
+    debug.innerText = "API Error: " + e.message; // This will now tell you exactly WHY it failed
+    document.getElementById('pCont').innerHTML = "Planning failed."; 
   }
   btn.disabled = false;
 }
