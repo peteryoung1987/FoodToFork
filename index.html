@@ -4,56 +4,93 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fridge to Fork</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); margin: 0; }
-  header { background: var(--ink); color: var(--cream); padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
-  .tabs { background: var(--ink); display: flex; padding: 0 1rem; border-bottom: 1px solid #2C2927; }
-  .tab { font-size: 0.75rem; color: #A8A29E; padding: 1rem; border: none; background: none; cursor: pointer; text-transform: uppercase; }
-  .tab.active { color: var(--cream); border-bottom: 2px solid var(--accent); }
-  .view { display: none; padding: 1rem; max-width: 600px; margin: 0 auto; }
+  :root {
+    --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; 
+    --card: #FFFFFF; --radius: 12px; --soft-ink: #44403C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.5; min-height: 100vh; }
+  
+  header { background: var(--ink); color: var(--cream); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; letter-spacing: -0.02em; }
+  #status { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
+
+  .tabs { background: var(--ink); display: flex; padding: 0 1rem; gap: 0.5rem; border-bottom: 1px solid #2C2927; }
+  .tab { font-size: 0.75rem; font-weight: 700; color: #A8A29E; padding: 1rem; border: none; background: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em; transition: 0.2s; }
+  .tab.active { color: var(--cream); border-bottom: 3px solid var(--accent); }
+
+  .view { display: none; padding: 1.5rem 1rem; max-width: 500px; margin: 0 auto; animation: fadeIn 0.3s ease; }
   .view.active { display: block; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
-  .btn { width: 100%; padding: 0.8rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 5px; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+  h2 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 1rem; }
+
+  label { display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem; color: var(--soft-ink); }
+  input { width: 100%; padding: 0.75rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.95rem; background: #fafafa; }
+  
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
   .btn-p { background: var(--accent); color: white; }
-  .btn-s { background: white; border: 1px solid var(--border); }
-  input { width: 100%; padding: 0.6rem; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; }
-  .day-card { background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
-  .day-h { background: var(--ink); color: white; padding: 8px 15px; font-family: serif; }
-  .m-box { padding: 10px 15px; border-bottom: 1px solid var(--border); }
+  .btn-p:hover { background: #9A3412; }
+  .btn-s { background: white; border: 2px solid var(--border); color: var(--soft-ink); margin-top: 0.75rem; }
+  .btn-s:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
+  .ing-info strong { display: block; font-size: 1rem; color: var(--ink); }
+  .ing-info small { color: var(--accent); font-weight: 600; font-size: 0.8rem; }
+  .btn-eat { width: auto; padding: 0.5rem 1rem; font-size: 0.75rem; border: 2px solid var(--accent); color: var(--accent); background: transparent; border-radius: 6px; font-weight: 700; cursor: pointer; }
+  .btn-eat:hover { background: var(--accent); color: white; }
+
+  .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+  .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; font-size: 1.1rem; }
+  .m-box { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
+  .m-box:last-child { border-bottom: none; }
+  .m-box small { display: block; text-transform: uppercase; font-size: 0.65rem; font-weight: 800; color: var(--accent); margin-bottom: 4px; letter-spacing: 0.05em; }
+  .m-box p { font-size: 0.95rem; font-weight: 500; color: var(--soft-ink); }
 </style>
 </head>
 <body>
 
-<header><h3>Fridge to Fork</h3><span id="status" style="font-size:0.7rem;">Ready</span></header>
+<header>
+  <h1>Fridge to Fork</h1>
+  <span id="status">Ready</span>
+</header>
 
 <div class="tabs">
-  <button class="tab active" onclick="sh('plan')">Plan</button>
+  <button class="tab active" onclick="sh('plan')">The Plan</button>
   <button class="tab" onclick="sh('ings')">Fridge</button>
   <button class="tab" onclick="sh('set')">Settings</button>
 </div>
 
 <div id="v-plan" class="view active">
-  <button class="btn btn-p" id="gBtn" onclick="generate()">Generate Plan</button>
-  <div id="pCont" style="margin-top:15px;"></div>
+  <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
+  <div id="pCont" style="margin-top:1rem;"></div>
 </div>
 
 <div id="v-ings" class="view">
   <div class="card">
-    <input type="text" id="n" placeholder="What's going in?">
+    <h2>Add New Item</h2>
+    <label>Ingredient Name</label>
+    <input type="text" id="n" placeholder="e.g. Minced Beef">
+    <label>Use By Date</label>
     <input type="date" id="d">
-    <button class="btn btn-p" onclick="push('add')">Add to Fridge & Sheet</button>
-    <button class="btn btn-s" onclick="sync()">Sync from Sheet</button>
+    <button class="btn btn-p" onclick="push('add')">Add to Fridge</button>
+    <button class="btn btn-s" onclick="sync()">🔄 Sync from Sheet</button>
   </div>
   <div id="iList"></div>
 </div>
 
 <div id="v-set" class="view">
   <div class="card">
-    <label>Gemini API Key</label><input type="password" id="ak">
-    <label>Apps Script URL</label><input type="text" id="su">
-    <button class="btn btn-p" onclick="saveS()">Save Config</button>
+    <h2>Setup</h2>
+    <label>Gemini API Key</label>
+    <input type="password" id="ak" placeholder="Enter key">
+    <label>Apps Script Web App URL</label>
+    <input type="text" id="su" placeholder="https://script.google.com/macros/s/...">
+    <button class="btn btn-p" onclick="saveS()">Save Configuration</button>
   </div>
 </div>
 
@@ -63,27 +100,38 @@ let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [
 function sh(v) {
   document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-  document.getElementById('v-'+v).classList.add('active');
-  if(v==='ings') renderI();
+  const target = document.getElementById('v-'+v);
+  if(target) target.classList.add('active');
+  
+  const tabs = document.querySelectorAll('.tab');
+  if(v==='plan') tabs[0].classList.add('active');
+  if(v==='ings') { tabs[1].classList.add('active'); renderI(); }
+  if(v==='set') tabs[2].classList.add('active');
 }
 
 function saveS() {
-  state.ak = document.getElementById('ak').value;
-  state.su = document.getElementById('su').value;
+  state.ak = document.getElementById('ak').value.trim();
+  state.su = document.getElementById('su').value.trim();
   localStorage.setItem('ftf_v2', JSON.stringify(state));
-  alert("Settings Saved");
+  alert("Settings Saved, mate.");
 }
 
 async function sync() {
-  if(!state.su) return alert("Needs Apps Script URL");
-  document.getElementById('status').innerText = "Syncing...";
-  const r = await fetch(state.su);
-  const d = await r.json();
-  state.ings = d.ingredients.filter(i => i.Used !== "Yes");
-  state.staples = d.staples;
-  localStorage.setItem('ftf_v2', JSON.stringify(state));
-  renderI();
-  document.getElementById('status').innerText = "Synced";
+  if(!state.su) return alert("Needs Apps Script URL in Settings!");
+  const status = document.getElementById('status');
+  status.innerText = "Syncing...";
+  try {
+    const r = await fetch(state.su);
+    const d = await r.json();
+    state.ings = d.ingredients.filter(i => i.Used !== "Yes" && i.Item);
+    state.staples = d.staples;
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI();
+    status.innerText = "Synced";
+  } catch(e) {
+    status.innerText = "Sync Error";
+    console.error(e);
+  }
 }
 
 async function push(action, name = null, date = null) {
@@ -91,287 +139,77 @@ async function push(action, name = null, date = null) {
   const d = date || document.getElementById('d').value;
   if(!n && action === 'add') return;
   
-  document.getElementById('status').innerText = "Updating Sheet...";
-  await fetch(state.su, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: JSON.stringify({ action, name: n, useBy: d })
-  });
-  
-  // Wait a sec for Google then re-sync
-  setTimeout(sync, 1500);
+  document.getElementById('status').innerText = "Updating...";
+  try {
+    await fetch(state.su, {
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action, name: n, useBy: d })
+    });
+    if(action === 'add') document.getElementById('n').value = '';
+    setTimeout(sync, 1500);
+  } catch(e) {
+    alert("Push failed: " + e.message);
+  }
 }
 
 function renderI() {
-  document.getElementById('iList').innerHTML = state.ings.map(i => `
-    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
-      <div><strong>${i.Item}</strong><br><small>${i['Use By'] || ''}</small></div>
-      <button class="btn btn-s" style="width:auto;" onclick="push('use', '${i.Item}')">Eat it</button>
+  const list = document.getElementById('iList');
+  if(state.ings.length === 0) {
+    list.innerHTML = '<p style="text-align:center; color:#A8A29E; margin-top:1rem;">Fridge is empty. Add something!</p>';
+    return;
+  }
+  list.innerHTML = state.ings.map(i => `
+    <div class="ing-item">
+      <div class="ing-info"><strong>${i.Item}</strong><small>${i['Use By'] ? 'Exp: ' + i['Use By'] : 'No Date'}</small></div>
+      <button class="btn-eat" onclick="push('use', '${i.Item}')">Eat it</button>
     </div>
   `).join('');
 }
 
 async function generate() {
+  if(!state.ak) return alert("Add API key in Settings!");
   const btn = document.getElementById('gBtn');
   btn.disabled = true;
-  document.getElementById('pCont').innerHTML = "Thinking...";
+  btn.innerText = "🍽️ Planning...";
   
   const prompt = `Plan 7 days. Lunch: Cold/No cook. Dinner: Cooked family meal. Sunday: Roast. 
   Ingredients: ${state.ings.map(i => i.Item).join(', ')}. 
   Staples: ${state.staples.join(', ')}.
   Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
 
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
-    method: 'POST',
-    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
-  });
-  const d = await r.json();
-  state.plan = JSON.parse(d.candidates[0].content.parts[0].text);
-  localStorage.setItem('ftf_v2', JSON.stringify(state));
-  renderP();
+  try {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+      method: 'POST',
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+    });
+    const d = await r.json();
+    state.plan = JSON.parse(d.candidates[0].content.parts[0].text);
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderP();
+  } catch(e) {
+    alert("Planning error: " + e.message);
+  }
   btn.disabled = false;
+  btn.innerText = "✨ Generate Week Plan";
 }
 
 function renderP() {
+  const cont = document.getElementById('pCont');
   if(!state.plan) return;
-  document.getElementById('pCont').innerHTML = state.plan.days.map(d => `
-    <div class="day-card"><div class="day-h">${d.day}</div>
-    <div class="m-box"><small>Lunch</small><br>${d.lunch}</div>
-    <div class="m-box"><small>Dinner</small><br>${d.dinner}</div></div>
+  cont.innerHTML = state.plan.days.map(d => `
+    <div class="day-card">
+      <div class="day-h">${d.day}</div>
+      <div class="m-box"><small>Lunch (Solo)</small><p>${d.lunch}</p></div>
+      <div class="m-box"><small>Dinner (Family)</small><p>${d.dinner}</p></div>
+    </div>
   `).join('');
 }
 
-// Init
+// Start
 document.getElementById('ak').value = state.ak;
 document.getElementById('su').value = state.su;
-renderP();
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fridge to Fork</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --cream: #F7F3EE; --warm-white: #FDFAF7; --ink: #1C1917; --ink-soft: #44403C;
-    --ink-muted: #78716C; --accent: #C2410C; --accent-soft: #FEF3EE; --border: #E7E2DC; 
-    --card: #FFFFFF; --radius: 12px;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.6; }
-  
-  header { background: var(--ink); color: var(--cream); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
-  header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
-  
-  .tabs { background: var(--ink); display: flex; padding: 0 1.5rem; border-bottom: 1px solid #2C2927; overflow-x: auto; }
-  .tab { font-size: 0.75rem; font-weight: 500; text-transform: uppercase; color: #A8A29E; padding: 0.8rem 1rem; border: none; background: none; cursor: pointer; white-space: nowrap; }
-  .tab.active { color: var(--cream); border-bottom: 2px solid var(--accent); }
-
-  .view { display: none; padding: 1.5rem; max-width: 760px; margin: 0 auto; }
-  .view.active { display: block; }
-
-  .setup-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-  h2 { font-family: 'Playfair Display', serif; margin-bottom: 1rem; font-size: 1.2rem; }
-
-  .btn { font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 600; padding: 0.7rem 1.25rem; border-radius: 8px; border: none; cursor: pointer; transition: 0.2s; }
-  .btn-primary { background: var(--accent); color: white; width: 100%; }
-  .btn-secondary { background: var(--warm-white); border: 1px solid var(--border); width: 100%; margin-top: 8px; }
-  .btn-primary:active, .btn-secondary:active { transform: scale(0.98); }
-
-  .day-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 1rem; overflow: hidden; }
-  .day-header { padding: 0.6rem 1.25rem; background: var(--ink); color: var(--cream); font-family: 'Playfair Display', serif; font-weight: 600; }
-  .meal-box { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); }
-  .meal-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); font-weight: 700; margin-bottom: 4px; }
-
-  input, select, textarea { width: 100%; padding: 0.6rem; margin: 4px 0 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
-  .staple-tag { display: inline-block; background: var(--accent-soft); color: var(--accent); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin: 2px; }
-</style>
-</head>
-<body>
-
-<header><h1>Fridge to Fork</h1><span id="sheetStatus" style="font-size:0.7rem; opacity:0.7;">Checking...</span></header>
-
-<div class="tabs">
-  <button class="tab active" onclick="showView('plan')">The Plan</button>
-  <button class="tab" onclick="showView('ingredients')">Ingredients</button>
-  <button class="tab" onclick="showView('settings')">Settings</button>
-</div>
-
-<div id="view-plan" class="view active">
-  <button class="btn btn-primary" id="generateBtn" onclick="generatePlan()">Generate Week Plan</button>
-  <div id="planContent" style="margin-top:1.5rem;"></div>
-</div>
-
-<div id="view-ingredients" class="view">
-  <div class="setup-card">
-    <h2>Add to Fridge</h2>
-    <input type="text" id="iName" placeholder="Item Name (e.g. Minced Beef)">
-    <input type="date" id="iDate">
-    <button class="btn btn-primary" onclick="addIngredient()">Add Item</button>
-    <button class="btn btn-secondary" onclick="loadFromSheet()">↓ Sync from Google Sheet</button>
-  </div>
-  <div id="ingredientsList"></div>
-</div>
-
-<div id="view-settings" class="view">
-  <div class="setup-card">
-    <h2>API & Sheet</h2>
-    <label>Gemini API Key</label><input type="password" id="apiKey">
-    <label>Sheet CSV URL</label><input type="text" id="sheetUrl">
-    <button class="btn btn-primary" onclick="saveSettings()">Save Config</button>
-  </div>
-  <div class="setup-card">
-    <h2>Cupboard Staples</h2>
-    <p style="font-size:0.8rem; color:var(--ink-muted); margin-bottom:10px;">Separate with commas</p>
-    <textarea id="staples" rows="3" onchange="saveStaples()"></textarea>
-    <div id="staplesList" style="margin-top:10px;"></div>
-  </div>
-</div>
-
-<script>
-let state = JSON.parse(localStorage.getItem('ftf_state')) || {
-  ingredients: [],
-  plan: null,
-  settings: { apiKey: '', sheetUrl: '', staples: 'Salt, Pepper, Olive Oil, Pasta, Rice, Eggs, Flour, Sugar' }
-};
-
-function save() { 
-  localStorage.setItem('ftf_state', JSON.stringify(state)); 
-  document.getElementById('sheetStatus').textContent = state.settings.sheetUrl ? "Connected" : "No Sheet";
-}
-
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('view-' + name).classList.add('active');
-  if(name === 'ingredients') renderIngredients();
-  if(name === 'settings') renderStaples();
-}
-
-function addIngredient() {
-  const name = document.getElementById('iName').value;
-  if(!name) return;
-  state.ingredients.push({ name, useBy: document.getElementById('iDate').value, id: Date.now() });
-  save();
-  renderIngredients();
-  document.getElementById('iName').value = '';
-}
-
-function renderIngredients() {
-  const list = document.getElementById('ingredientsList');
-  list.innerHTML = state.ingredients.map(i => `
-    <div class="setup-card" style="display:flex; justify-content:space-between; align-items:center; padding:0.8rem 1.25rem;">
-      <div><strong>${i.name}</strong><br><small style="color:var(--accent);">${i.useBy || 'No date'}</small></div>
-      <button class="btn" style="background:none; color:var(--ink-muted); font-size:1.2rem;" onclick="removeIng(${i.id})">✕</button>
-    </div>
-  `).join('');
-}
-
-function removeIng(id) {
-  state.ingredients = state.ingredients.filter(i => i.id !== id);
-  save();
-  renderIngredients();
-}
-
-async function loadFromSheet() {
-  if(!state.settings.sheetUrl) return alert("Add your CSV link in Settings!");
-  try {
-    const res = await fetch(state.settings.sheetUrl);
-    const text = await res.text();
-    if (text.includes("<!DOCTYPE")) throw new Error("Wrong link type! Ensure it is 'CSV' format.");
-    
-    const rows = text.split('\n').slice(1);
-    state.ingredients = rows.filter(r => r.trim() && r.split(',')[0]).map(r => {
-      const cols = r.split(',');
-      return { name: cols[0].replace(/"/g, '').trim(), useBy: cols[4] || '', id: Date.now() + Math.random() };
-    });
-    save();
-    renderIngredients();
-    alert("Sorted! Ingredients synced.");
-  } catch (e) { alert("Sync failed: " + e.message); }
-}
-
-function saveSettings() {
-  state.settings.apiKey = document.getElementById('apiKey').value;
-  state.settings.sheetUrl = document.getElementById('sheetUrl').value;
-  save();
-  alert("Settings saved!");
-}
-
-function saveStaples() {
-  state.settings.staples = document.getElementById('staples').value;
-  save();
-  renderStaples();
-}
-
-function renderStaples() {
-  const area = document.getElementById('staples');
-  area.value = state.settings.staples;
-  const tags = state.settings.staples.split(',').map(s => `<span class="staple-tag">${s.trim()}</span>`).join('');
-  document.getElementById('staplesList').innerHTML = tags;
-}
-
-async function generatePlan() {
-  if(!state.settings.apiKey) return alert("Add your Gemini API key in Settings!");
-  const btn = document.getElementById('generateBtn');
-  btn.disabled = true;
-  btn.textContent = "Cooking up a plan...";
-  document.getElementById('planContent').innerHTML = '<div style="text-align:center; padding:2rem;"><div style="width:30px; height:30px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto;"></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
-
-  const prompt = `Plan 7 days of meals for Pete. 
-  1. Solo Lunch: High protein, assembly-only, NO COOKING (e.g. salads, cold meats).
-  2. Family Dinner: Cooked meal for 3 (Pete, Wife, 9yo daughter). Mild/Medium spice.
-  3. Sunday: Traditional Roast Lunch.
-  Use these ingredients: ${state.ingredients.map(i => i.name).join(', ')}.
-  Assume these cupboard staples are available: ${state.settings.staples}.
-  Return ONLY JSON: {"days": [{"day": "Monday", "lunch": "...", "dinner": "..."}]}`;
-
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.settings.apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseMimeType: "application/json" }
-      })
-    });
-    const data = await res.json();
-    state.plan = JSON.parse(data.candidates[0].content.parts[0].text);
-    save();
-    renderPlan();
-  } catch (e) { 
-    document.getElementById('planContent').innerHTML = `<div class="setup-card" style="color:red;">Error: ${e.message}</div>`;
-  }
-  btn.disabled = false;
-  btn.textContent = "Generate Week Plan";
-}
-
-function renderPlan() {
-  if(!state.plan) return;
-  document.getElementById('planContent').innerHTML = state.plan.days.map(d => `
-    <div class="day-card">
-      <div class="day-header">${d.day}</div>
-      <div class="meal-box">
-        <div class="meal-label">Lunch (Solo)</div>
-        <div style="font-weight:500;">${d.lunch}</div>
-      </div>
-      <div class="meal-box">
-        <div class="meal-label">Dinner (Family)</div>
-        <div style="font-weight:500;">${d.dinner}</div>
-      </div>
-    </div>
-  `).join('');
-}
-
-// Initial Load
-document.getElementById('apiKey').value = state.settings.apiKey || '';
-document.getElementById('sheetUrl').value = state.settings.sheetUrl || '';
-renderStaples();
-renderPlan();
-save();
+if(state.plan) renderP();
 </script>
 </body>
 </html>
