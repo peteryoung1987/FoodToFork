@@ -8,7 +8,7 @@
 <style>
   :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); line-height: 1.5; padding-bottom: 50px; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); padding-bottom: 50px; }
   header { background: var(--ink); color: var(--cream); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; }
   header h1 { font-family: 'Playfair Display', serif; font-size: 1.4rem; }
   #status { font-size: 0.7rem; background: rgba(255,255,255,0.1); padding: 4px 10px; border-radius: 20px; }
@@ -20,7 +20,7 @@
   .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
   label { display: block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; color: #78716C; }
   input, select { width: 100%; padding: 0.7rem; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 0.9rem; }
-  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
+  .btn { width: 100%; padding: 0.9rem; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; }
   .btn-p { background: var(--accent); color: white; }
   .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
   .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px; }
@@ -53,7 +53,7 @@
 <div id="v-ings" class="view">
   <div class="card">
     <h2>Add Item</h2>
-    <label>Ingredient Name</label><input type="text" id="n" placeholder="e.g. Salmon">
+    <label>Ingredient Name</label><input type="text" id="n" placeholder="e.g. Steak">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
         <input type="number" id="q" value="1"><select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
     </div>
@@ -150,13 +150,13 @@ async function generate() {
   const prompt = `Plan 7 days. Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast. Ingredients: ${state.ings.map(i => i.Item).join(', ')}. Staples: ${state.staples.join(', ')}. Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
 
   try {
-    // UPDATED TO STABLE v1 ENDPOINT
+    // v1 Endpoint uses camelCase for responseMimeType
     const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         contents: [{ parts: [{ text: prompt }] }], 
-        generationConfig: { response_mime_type: "application/json" } 
+        generationConfig: { responseMimeType: "application/json" } 
       })
     });
     const d = await r.json();
