@@ -427,22 +427,35 @@ async function generatePlan() {
   const btn = document.getElementById('gBtn');
   btn.disabled = true; btn.innerText = '⏳ Consulting Chef…';
 
+  const today = new Date();
+  const dates = Array.from({length:7}, (_,i) => {
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
+    const yyyy = d.getFullYear();
+    const day = d.toLocaleDateString('en-GB',{weekday:'long'});
+    return `${dd}/${mm}/${yyyy} (${day})`;
+  }).join(', ');
+
   const prompt = `You are a meal planning assistant for a UK household.
 LUNCH: Single adult male. High volume, low calorie, centred on one protein. Keep it varied.
 DINNER: Family of 3 (2 adults, 1 girl aged 9). Must include a Sunday Roast on the Sunday. Family-friendly.
 FRIDGE/FREEZER INVENTORY: ${state.ings.map(i=>`${i.Qty}${i.Unit} ${i.Item}`).join(', ')||'Nothing specific'}.
 USER STAPLES: ${state.staples.join(', ')||'None'}.
 UNIVERSAL PANTRY: Assume all standard UK pantry essentials available.
-Plan 7 days starting ${new Date().toLocaleDateString('en-GB')}.
+Plan meals for EXACTLY these 7 dates in order: ${dates}.
+Use the exact date strings provided (DD/MM/YYYY format). Do not invent or change any dates.
 Return ONLY valid JSON, no markdown fences:
 {"days":[{"date":"DD/MM/YYYY","day":"Monday","lunch":"meal name","dinner":"meal name","used_ings":["item"]}]}`;
 
   try {
     const d = await gemini(prompt);
     const text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi,'').trim();
-    state.plan = JSON.parse(text);
+    const parsed = JSON.parse(text);
+    if (!parsed.days || parsed.days.length < 7) throw new Error('Gemini returned an incomplete plan — try again.');
+    state.plan = parsed;
     persist(); renderMealPlan(); pushAll();
-  } catch(e) { alert('Could not generate plan. Check your API key.'); console.error(e); }
+  } catch(e) { alert('Could not generate plan: ' + e.message); console.error(e); }
   btn.disabled = false; btn.innerText = '✨ Generate 7-Day Plan';
 }
 
