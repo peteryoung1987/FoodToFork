@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fridge to Fork</title>
+    <title>Fridge to Fork v2.2</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
@@ -24,16 +24,13 @@
         .btn:active { transform: scale(0.98); opacity: 0.9; }
         .btn-p { background: var(--accent); color: white; }
         .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
-        .edit-card { background: #FFF7ED; border: 2px solid var(--accent); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
-        .ing-row { display: flex; gap: 10px; align-items: flex-end; }
         .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
         .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
         .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
         .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
-        .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
-        .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-        .staple-tag { background: #E7E2DC; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; }
-        .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; }
+        .m-box p { font-size: 0.95rem; line-height: 1.4; color: #44403C; }
+        .recipe-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 2rem; }
+        .staple-tag { background: #E7E2DC; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -47,46 +44,31 @@
 </div>
 
 <div id="v-plan" class="view">
-    <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
-    <div id="debugBox" class="debug-log"></div>
+    <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate New 7-Day Plan</button>
     <div id="pCont" style="margin-top:1rem;"></div>
 </div>
 
 <div id="v-ings" class="view">
     <div class="card">
-        <label>Ingredient</label><input type="text" id="n" placeholder="e.g. Salmon Fillets">
-        <div class="ing-row">
+        <label>Ingredient</label><input type="text" id="n" placeholder="Salmon">
+        <div style="display:flex; gap:10px;">
             <div style="flex:1"><label>Qty</label><input type="number" id="q" value="1"></div>
-            <div style="flex:1"><label>Unit</label>
-                <select id="u">
-                    <option value="units">units</option>
-                    <option value="g">g</option>
-                    <option value="ml">ml</option>
-                </select>
-            </div>
-        </div>
-        <div class="ing-row">
-            <div style="flex:1"><label>Storage</label><select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select></div>
-            <div style="flex:1"><label>Use By</label><input type="date" id="d"></div>
+            <div style="flex:1"><label>Unit</label><select id="u"><option>units</option><option>g</option><option>ml</option></select></div>
         </div>
         <button class="btn btn-p" onclick="pushItem()">Add to Fridge</button>
-        <button class="btn btn-s" onclick="sync()">🔄 Refresh List</button>
+        <button class="btn btn-s" onclick="sync()">🔄 Refresh from Sheet</button>
     </div>
     <div id="iList"></div>
 </div>
 
 <div id="v-set" class="view">
     <div class="card">
-        <h2>Staples Manager</h2>
-        <div style="display:flex; gap:8px; margin-bottom:15px;">
-            <input type="text" id="newStaple" placeholder="Add staple...">
-            <button class="btn btn-p" style="width: auto;" onclick="addStapleTag()">Add</button>
-        </div>
-        <div id="stapleTags" class="staple-container"></div>
-        <button class="btn btn-p" style="margin-top:20px;" onclick="pushAll()">💾 Sync & Save Everything</button>
+        <h2>Staples</h2>
+        <div style="display:flex; gap:8px;"><input type="text" id="newStaple"><button class="btn btn-p" style="width:auto" onclick="addStapleTag()">Add</button></div>
+        <div id="stapleTags" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;"></div>
+        <button class="btn btn-p" style="margin-top:20px;" onclick="pushAll()">💾 Sync Everything</button>
     </div>
     <div class="card">
-        <h2>Config</h2>
         <label>Gemini API Key</label><input type="password" id="ak">
         <label>Apps Script URL</label><input type="text" id="su">
         <button class="btn btn-s" onclick="saveS()">Save Credentials</button>
@@ -94,211 +76,173 @@
 </div>
 
 <script>
-let state = { ings: [], staples: [], plan: null, ak: '', su: '' };
-try {
-    const saved = localStorage.getItem('ftf_v2');
-    if (saved) state = JSON.parse(saved);
-} catch (e) {}
-
-let editingIdx = null;
+let state = { ings: [], staples: [], plan: { days: [] }, ak: '', su: '' };
+const saved = localStorage.getItem('ftf_v2');
+if (saved) state = JSON.parse(saved);
 
 function sh(v) {
-    document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
-    document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-    
-    const targetView = document.getElementById('v-' + v);
-    if (targetView) targetView.classList.add('active');
-    
-    const targetTab = document.getElementById('t-' + v);
-    if (targetTab) targetTab.classList.add('active');
-
+    document.querySelectorAll('.view, .tab').forEach(e => e.classList.remove('active'));
+    document.getElementById('v-' + v).classList.add('active');
+    document.getElementById('t-' + v).classList.add('active');
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
-}
-
-function fmtD(dStr) {
-    if(!dStr) return 'No Date';
-    const d = new Date(dStr);
-    return isNaN(d) ? dStr : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    if(v === 'plan') renderP();
 }
 
 function saveS() {
     state.ak = document.getElementById('ak').value.trim();
     state.su = document.getElementById('su').value.trim();
     localStorage.setItem('ftf_v2', JSON.stringify(state));
-    alert("Settings saved.");
+    alert("Saved");
 }
-
-function renderStapleTags() {
-    const container = document.getElementById('stapleTags');
-    if(!container) return;
-    container.innerHTML = (state.staples || []).map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
-}
-
-function addStapleTag() {
-    const input = document.getElementById('newStaple');
-    if(input.value.trim()) { 
-        state.staples.push(input.value.trim()); 
-        input.value = ''; 
-        renderStapleTags(); 
-    }
-}
-
-function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
 function renderI() {
     const list = document.getElementById('iList');
-    if(!list) return;
-    list.innerHTML = (state.ings || []).map((i, idx) => {
-        const name = i.Item || 'Unknown';
-        const cat = i.Category || ''; 
-        const qty = i.Qty || ''; 
-        const unit = i.Unit || '';      
-        const store = i.Storage || ''; 
-        const exp = i['Use By'] || '';
-
-        if(editingIdx === idx) {
-            return `<div class="edit-card">
-                <label>Name</label><input type="text" id="ed-n" value="${name}">
-                <label>Category</label><input type="text" id="ed-cat" value="${cat}">
-                <div class="ing-row">
-                    <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${qty}"></div>
-                    <div style="flex:1"><label>Unit</label><input type="text" id="ed-u" value="${unit}"></div>
-                </div>
-                <div class="ing-row">
-                    <div style="flex:1"><label>Storage</label><input type="text" id="ed-s" value="${store}"></div>
-                    <div style="flex:1"><label>Use By</label><input type="date" id="ed-d" value="${exp ? new Date(exp).toISOString().split('T')[0] : ''}"></div>
-                </div>
-                <div style="display:flex; gap:10px;"><button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button><button class="btn btn-s" onclick="cancelEdit()">Cancel</button></div>
-            </div>`;
-        }
-        return `<div class="ing-item">
-            <div><strong>${name}</strong><br><small>${cat} | ${qty} ${unit} | ${store} | Exp: ${fmtD(exp)}</small></div>
-            <div style="display:flex; gap:5px;">
-                <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
-                <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${name}')">Eat</button>
-            </div>
-        </div>`;
-    }).join('');
+    list.innerHTML = (state.ings || []).map((i, idx) => `
+        <div class="ing-item">
+            <div><strong>${i.Item}</strong><br><small>${i.Qty} ${i.Unit || ''}</small></div>
+            <button class="btn btn-s" style="width:auto; color:red;" onclick="eatItem('${i.Item}')">Eat</button>
+        </div>
+    `).join('');
 }
-    
-function startEdit(idx) { editingIdx = idx; renderI(); }
-function cancelEdit() { editingIdx = null; renderI(); }
 
-function confirmEdit(idx) {
-    state.ings[idx] = { 
-        Item: document.getElementById('ed-n').value,
-        Category: document.getElementById('ed-cat').value, 
-        Qty: document.getElementById('ed-q').value, 
-        Unit: document.getElementById('ed-u').value, 
-        Storage: document.getElementById('ed-s').value,
-        'Use By': document.getElementById('ed-d').value
-    };
-    editingIdx = null;
-    localStorage.setItem('ftf_v2', JSON.stringify(state));
-    renderI();
-    pushAll();
+function renderStapleTags() {
+    document.getElementById('stapleTags').innerHTML = (state.staples || []).map((s, i) => `
+        <div class="staple-tag">${s}<span onclick="state.staples.splice(${i},1);renderStapleTags()" style="cursor:pointer">×</span></div>
+    `).join('');
+}
+
+function addStapleTag() {
+    const v = document.getElementById('newStaple').value;
+    if(v) { state.staples.push(v); document.getElementById('newStaple').value=''; renderStapleTags(); }
 }
 
 async function sync() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Syncing...";
-    try {
-        const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
-        const d = await r.json();
-        state.ings = d.ingredients || [];
-        state.staples = d.staples || [];
-        localStorage.setItem('ftf_v2', JSON.stringify(state));
-        renderI();
-        document.getElementById('status').innerText = "Ready";
-    } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
+    const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
+    const d = await r.json();
+    state.ings = d.ingredients || [];
+    state.staples = d.staples || [];
+    if(d.plan) state.plan = d.plan;
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI(); renderP();
+    document.getElementById('status').innerText = "Ready";
 }
 
 async function pushAll() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Saving...";
-    const payload = { action: 'pushAll', ings: state.ings, staples: state.staples, plan: state.plan };
-    await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+    await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'pushAll', ...state }) });
     document.getElementById('status').innerText = "Ready";
 }
 
 function pushItem() {
-    state.ings.push({ 
-        Item: document.getElementById('n').value, 
-        Category: '', 
-        Qty: document.getElementById('q').value, 
-        Unit: document.getElementById('u').value, 
-        Storage: document.getElementById('s').value, 
-        'Use By': document.getElementById('d').value 
-    });
+    state.ings.push({ Item: document.getElementById('n').value, Qty: document.getElementById('q').value, Unit: document.getElementById('u').value });
     localStorage.setItem('ftf_v2', JSON.stringify(state));
-    renderI();
-    pushAll();
+    renderI(); pushAll();
 }
 
 function eatItem(name) {
     state.ings = state.ings.filter(i => i.Item !== name);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
-    renderI();
-    pushAll();
-}
-
-async function generate() {
-  const btn = document.getElementById('gBtn');
-  const debug = document.getElementById('debugBox');
-  if(!state.ak) return alert("Add API Key");
-  btn.disabled = true; debug.style.display = 'none';
-  document.getElementById('pCont').innerHTML = "Chef is thinking...";
-  const today = new Date().toLocaleDateString('en-GB');
-
-    const prompt = `
-    Context:
-    - Family of 3: 2 adults and one 9-year-old girl.
-    - Lunch: For 1 person only. Must be quick, easy, and low-calorie.
-    - Dinner: Family meal for all 3. Hearty but balanced.
-    - Variety: Do NOT repeat the same core protein/ingredient more than twice a week. 
-    - Sunday: Must be a traditional Roast.
-    - Inventory Logic: Use the quantities provided. If I have "2 Chicken Breasts", that is ONE dinner for 3 people; do not use them again.
-
-    Ingredients Available: ${state.ings.map(i => (i.Qty || 0) + (i.Unit||'units') + ' ' + i.Item).join(', ')}
-    Staples (assume always available): ${state.staples.join(', ')}
-
-    Return ONLY a JSON object:
-    {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"Description","dinner":"Description"}]}
-    
-    Plan for 7 days starting from ${today}.
-  `;
-
-  try {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
-    const d = await r.json();
-    let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
-    state.plan = JSON.parse(text);
-    localStorage.setItem('ftf_v2', JSON.stringify(state));
-    renderP();
-    pushAll(); 
-  } catch (e) { 
-    debug.style.display = 'block'; 
-    debug.innerText = "Error: " + e.message;
-    document.getElementById('pCont').innerHTML = "Failed to generate plan."; 
-  }
-  btn.disabled = false;
+    renderI(); pushAll();
 }
 
 function renderP() {
     const cont = document.getElementById('pCont');
-    if(!cont || !state.plan || !state.plan.days) return;
-    cont.innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day} (${d.date})</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
+    if(!state.plan || !state.plan.days) return;
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    const futureDays = state.plan.days.filter(d => {
+        const p = d.date.split('/');
+        return new Date(p[2], p[1]-1, p[0]) >= today;
+    }).sort((a,b) => {
+        const ad = a.date.split('/'); const bd = b.date.split('/');
+        return new Date(ad[2], ad[1]-1, ad[0]) - new Date(bd[2], bd[1]-1, bd[0]);
+    });
+
+    cont.innerHTML = futureDays.map(d => `
+        <div class="day-card">
+            <div class="day-h">${d.day} (${d.date})</div>
+            <div class="m-box">
+                <label>Lunch (Quick)</label>
+                <p onclick="getRecipe('${d.lunch}')" style="cursor:pointer; text-decoration:underline;">${d.lunch}</p>
+            </div>
+            <div class="m-box">
+                <label>Dinner (Family)</label>
+                <p onclick="getRecipe('${d.dinner}')" style="cursor:pointer; text-decoration:underline;">${d.dinner}</p>
+                <div style="margin-top:10px; display:flex; gap:5px;">
+                    <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="regenMeal('${d.date}')">🎲 Regen</button>
+                    <button class="btn btn-s" style="width:auto; font-size:0.6rem; padding:5px 10px;" onclick="hintMeal('${d.date}')">💡 Hint</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
 }
 
-// Initialize
+async function generate() {
+    const btn = document.getElementById('gBtn');
+    if(!state.ak) return alert("API Key Required");
+    btn.disabled = true; btn.innerText = "Chef is thinking...";
+    
+    const prompt = `Family of 3 (2 adults, 1 child). Standardised Qty. Sunday Roast mandatory.
+    Ingredients: ${state.ings.map(i => i.Qty + i.Unit + ' ' + i.Item).join(', ')}.
+    Staples: ${state.staples.join(', ')}.
+    Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":["item1"]}]}. 
+    Plan 7 days from ${new Date().toLocaleDateString('en-GB')}.`;
+
+    try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const d = await r.json();
+        const text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+        state.plan = JSON.parse(text);
+        localStorage.setItem('ftf_v2', JSON.stringify(state));
+        renderP(); pushAll();
+    } catch(e) { alert("Error generating plan."); }
+    btn.disabled = false; btn.innerText = "✨ Generate New 7-Day Plan";
+}
+
+async function getRecipe(meal) {
+    const m = document.createElement('div');
+    m.className = 'recipe-modal';
+    m.innerHTML = `<h2>Writing recipe for ${meal}...</h2>`;
+    document.body.appendChild(m);
+
+    const p = `Recipe for "${meal}" using ${state.ings.map(i=>i.Item).join(', ')}. UK prices/units. Casual tone, swearing allowed.`;
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+    });
+    const d = await r.json();
+    m.innerHTML = `<h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap;">${d.candidates[0].content.parts[0].text}</div><button class="btn btn-p" onclick="this.parentElement.remove()">Close</button>`;
+}
+
+async function regenMeal(date, hint = "") {
+    document.getElementById('status').innerText = "Rerolling...";
+    const p = `Regenerate Dinner for ${date}. ${hint ? 'Hint: '+hint : ''}. Inventory: ${state.ings.map(i=>i.Item).join(',')}. Return JSON: {"dinner":"...", "used_ings":[]}`;
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+    });
+    const d = await r.json();
+    const res = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/gi, ""));
+    const idx = state.plan.days.findIndex(x => x.date === date);
+    state.plan.days[idx].dinner = res.dinner;
+    state.plan.days[idx].used_ings = res.used_ings;
+    renderP(); pushAll();
+}
+
+function hintMeal(date) { const h = prompt("Any specific idea?"); if(h) regenMeal(date, h); }
+
+// Init
 document.getElementById('ak').value = state.ak || '';
 document.getElementById('su').value = state.su || '';
-if(state.plan) renderP();
 sh('plan');
 </script>
 </body>
