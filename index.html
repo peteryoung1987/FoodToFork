@@ -6,6 +6,155 @@
 <title>Fridge to Fork</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
+  :root { --cream: #F7F3EE; --ink: #1C1917; --accent: #C2410C; --border: #E7E2DC; --card: #FFFFFF; --radius: 12px; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); margin: 0; }
+  header { background: var(--ink); color: var(--cream); padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
+  .tabs { background: var(--ink); display: flex; padding: 0 1rem; border-bottom: 1px solid #2C2927; }
+  .tab { font-size: 0.75rem; color: #A8A29E; padding: 1rem; border: none; background: none; cursor: pointer; text-transform: uppercase; }
+  .tab.active { color: var(--cream); border-bottom: 2px solid var(--accent); }
+  .view { display: none; padding: 1rem; max-width: 600px; margin: 0 auto; }
+  .view.active { display: block; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
+  .btn { width: 100%; padding: 0.8rem; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; margin-top: 5px; }
+  .btn-p { background: var(--accent); color: white; }
+  .btn-s { background: white; border: 1px solid var(--border); }
+  input { width: 100%; padding: 0.6rem; margin-bottom: 10px; border: 1px solid var(--border); border-radius: 6px; }
+  .day-card { background: white; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .day-h { background: var(--ink); color: white; padding: 8px 15px; font-family: serif; }
+  .m-box { padding: 10px 15px; border-bottom: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<header><h3>Fridge to Fork</h3><span id="status" style="font-size:0.7rem;">Ready</span></header>
+
+<div class="tabs">
+  <button class="tab active" onclick="sh('plan')">Plan</button>
+  <button class="tab" onclick="sh('ings')">Fridge</button>
+  <button class="tab" onclick="sh('set')">Settings</button>
+</div>
+
+<div id="v-plan" class="view active">
+  <button class="btn btn-p" id="gBtn" onclick="generate()">Generate Plan</button>
+  <div id="pCont" style="margin-top:15px;"></div>
+</div>
+
+<div id="v-ings" class="view">
+  <div class="card">
+    <input type="text" id="n" placeholder="What's going in?">
+    <input type="date" id="d">
+    <button class="btn btn-p" onclick="push('add')">Add to Fridge & Sheet</button>
+    <button class="btn btn-s" onclick="sync()">Sync from Sheet</button>
+  </div>
+  <div id="iList"></div>
+</div>
+
+<div id="v-set" class="view">
+  <div class="card">
+    <label>Gemini API Key</label><input type="password" id="ak">
+    <label>Apps Script URL</label><input type="text" id="su">
+    <button class="btn btn-p" onclick="saveS()">Save Config</button>
+  </div>
+</div>
+
+<script>
+let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [], plan: null, ak: '', su: '' };
+
+function sh(v) {
+  document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
+  document.getElementById('v-'+v).classList.add('active');
+  if(v==='ings') renderI();
+}
+
+function saveS() {
+  state.ak = document.getElementById('ak').value;
+  state.su = document.getElementById('su').value;
+  localStorage.setItem('ftf_v2', JSON.stringify(state));
+  alert("Settings Saved");
+}
+
+async function sync() {
+  if(!state.su) return alert("Needs Apps Script URL");
+  document.getElementById('status').innerText = "Syncing...";
+  const r = await fetch(state.su);
+  const d = await r.json();
+  state.ings = d.ingredients.filter(i => i.Used !== "Yes");
+  state.staples = d.staples;
+  localStorage.setItem('ftf_v2', JSON.stringify(state));
+  renderI();
+  document.getElementById('status').innerText = "Synced";
+}
+
+async function push(action, name = null, date = null) {
+  const n = name || document.getElementById('n').value;
+  const d = date || document.getElementById('d').value;
+  if(!n && action === 'add') return;
+  
+  document.getElementById('status').innerText = "Updating Sheet...";
+  await fetch(state.su, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: JSON.stringify({ action, name: n, useBy: d })
+  });
+  
+  // Wait a sec for Google then re-sync
+  setTimeout(sync, 1500);
+}
+
+function renderI() {
+  document.getElementById('iList').innerHTML = state.ings.map(i => `
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+      <div><strong>${i.Item}</strong><br><small>${i['Use By'] || ''}</small></div>
+      <button class="btn btn-s" style="width:auto;" onclick="push('use', '${i.Item}')">Eat it</button>
+    </div>
+  `).join('');
+}
+
+async function generate() {
+  const btn = document.getElementById('gBtn');
+  btn.disabled = true;
+  document.getElementById('pCont').innerHTML = "Thinking...";
+  
+  const prompt = `Plan 7 days. Lunch: Cold/No cook. Dinner: Cooked family meal. Sunday: Roast. 
+  Ingredients: ${state.ings.map(i => i.Item).join(', ')}. 
+  Staples: ${state.staples.join(', ')}.
+  Return ONLY JSON: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}`;
+
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+    method: 'POST',
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } })
+  });
+  const d = await r.json();
+  state.plan = JSON.parse(d.candidates[0].content.parts[0].text);
+  localStorage.setItem('ftf_v2', JSON.stringify(state));
+  renderP();
+  btn.disabled = false;
+}
+
+function renderP() {
+  if(!state.plan) return;
+  document.getElementById('pCont').innerHTML = state.plan.days.map(d => `
+    <div class="day-card"><div class="day-h">${d.day}</div>
+    <div class="m-box"><small>Lunch</small><br>${d.lunch}</div>
+    <div class="m-box"><small>Dinner</small><br>${d.dinner}</div></div>
+  `).join('');
+}
+
+// Init
+document.getElementById('ak').value = state.ak;
+document.getElementById('su').value = state.su;
+renderP();
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fridge to Fork</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
   :root {
     --cream: #F7F3EE; --warm-white: #FDFAF7; --ink: #1C1917; --ink-soft: #44403C;
     --ink-muted: #78716C; --accent: #C2410C; --accent-soft: #FEF3EE; --border: #E7E2DC; 
