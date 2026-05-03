@@ -24,15 +24,15 @@
         .btn:active { transform: scale(0.98); opacity: 0.9; }
         .btn-p { background: var(--accent); color: white; }
         .btn-s { background: white; border: 2px solid var(--border); color: #44403C; margin-top: 10px; }
+        .edit-card { background: #FFF7ED; border: 2px solid var(--accent); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
+        .ing-row { display: flex; gap: 10px; align-items: flex-end; }
         .staple-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; padding: 5px; }
         .staple-tag { background: #E7E2DC; color: var(--ink); padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; display: flex; align-items: center; gap: 6px; }
         .remove-staple { cursor: pointer; color: var(--accent); font-weight: bold; }
-        .add-staple-row { display: flex; gap: 8px; margin-bottom: 15px; }
         .ing-item { display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: white; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 0.75rem; }
         .day-card { background: white; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.25rem; overflow: hidden; }
         .day-h { background: var(--ink); color: white; padding: 0.75rem 1.25rem; font-family: 'Playfair Display', serif; }
         .m-box { padding: 1rem; border-bottom: 1px solid var(--border); }
-        .debug-log { background: #fee2e2; border: 1px solid #ef4444; padding: 10px; border-radius: 8px; font-family: monospace; font-size: 0.7rem; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -47,20 +47,26 @@
 
 <div id="v-plan" class="view active">
     <button class="btn btn-p" id="gBtn" onclick="generate()">✨ Generate Week Plan</button>
-    <div id="debugBox" class="debug-log"></div>
     <div id="pCont" style="margin-top:1rem;"></div>
 </div>
 
 <div id="v-ings" class="view">
     <div class="card">
-        <label>Ingredient</label><input type="text" id="n" placeholder="e.g. Chicken Thighs">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <input type="number" id="q" value="1"><select id="c"><option>Meat/Fish</option><option>Veg</option><option>Dairy</option><option>Other</option></select>
+        <label>Ingredient</label><input type="text" id="n" placeholder="e.g. Salmon Fillets">
+        <div class="ing-row">
+            <div style="flex:1"><label>Qty</label><input type="number" id="q" value="1"></div>
+            <div style="flex:1"><label>Unit</label>
+                <select id="u">
+                    <option value="units">units</option>
+                    <option value="g">g</option>
+                </select>
+            </div>
         </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select><input type="date" id="d">
+        <div class="ing-row">
+            <div style="flex:1"><label>Storage</label><select id="s"><option>Fridge</option><option>Freezer</option><option>Cupboard</option></select></div>
+            <div style="flex:1"><label>Use By</label><input type="date" id="d"></div>
         </div>
-        <button class="btn btn-p" onclick="push('add')">Add to Fridge</button>
+        <button class="btn btn-p" onclick="pushItem()">Add to Fridge</button>
         <button class="btn btn-s" onclick="sync()">🔄 Refresh List</button>
     </div>
     <div id="iList"></div>
@@ -69,13 +75,12 @@
 <div id="v-set" class="view">
     <div class="card">
         <h2>Staples Manager</h2>
-        <div class="add-staple-row">
+        <div style="display:flex; gap:8px; margin-bottom:15px;">
             <input type="text" id="newStaple" placeholder="Add staple..." onkeydown="if(event.key==='Enter')addStapleTag()">
             <button class="btn btn-p" style="width: auto;" onclick="addStapleTag()">Add</button>
         </div>
         <div id="stapleTags" class="staple-container"></div>
         <button class="btn btn-p" style="margin-top:20px;" onclick="pushAll()">💾 Sync & Save Everything</button>
-        <button class="btn btn-s" onclick="sync()">🔄 Pull Latest</button>
     </div>
     <div class="card">
         <h2>Config</h2>
@@ -87,20 +92,14 @@
 
 <script>
 let state = JSON.parse(localStorage.getItem('ftf_v2')) || { ings: [], staples: [], plan: null, ak: '', su: '' };
+let editingIdx = null;
 
 function sh(v) {
     document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
     document.getElementById('v-' + v).classList.add('active');
-    
-    // Find the button by its text content to set active state
     const tabs = document.querySelectorAll('.tab');
-    tabs.forEach(t => {
-        if(t.innerText.toLowerCase() === v.toLowerCase() || (v === 'set' && t.innerText === 'SETTINGS')) {
-            t.classList.add('active');
-        }
-    });
-
+    tabs.forEach(t => { if(t.innerText.toLowerCase() === v.toLowerCase() || (v === 'set' && t.innerText === 'SETTINGS')) t.classList.add('active'); });
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
 }
@@ -131,98 +130,116 @@ function addStapleTag() {
 
 function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
+function renderI() {
+    const list = document.getElementById('iList');
+    list.innerHTML = (state.ings || []).map((i, idx) => {
+        if(editingIdx === idx) {
+            return `
+            <div class="edit-card">
+                <label>Name</label><input type="text" id="ed-n" value="${i.Item}">
+                <div class="ing-row">
+                    <div style="flex:1"><label>Qty</label><input type="number" id="ed-q" value="${i.Qty}"></div>
+                    <div style="flex:1"><label>Unit</label>
+                        <select id="ed-u">
+                            <option value="units" ${i.Unit==='units'?'selected':''}>units</option>
+                            <option value="g" ${i.Unit==='g'?'selected':''}>g</option>
+                        </select>
+                    </div>
+                </div>
+                <label>Use By</label><input type="date" id="ed-d" value="${i['Use By'] || ''}">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-p" onclick="confirmEdit(${idx})">Save</button>
+                    <button class="btn btn-s" onclick="cancelEdit()">Cancel</button>
+                </div>
+            </div>`;
+        }
+        return `
+        <div class="ing-item">
+            <div><strong>${i.Item}</strong><br><small>${i.Qty}${i.Unit || ' units'} | Exp: ${fmtD(i['Use By'])}</small></div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;" onclick="startEdit(${idx})">Edit</button>
+                <button class="btn btn-s" style="width:auto;margin:0;padding:5px 10px;border-color:#ef4444;color:#ef4444;" onclick="eatItem('${i.Item}')">Eat</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function startEdit(idx) { editingIdx = idx; renderI(); }
+function cancelEdit() { editingIdx = null; renderI(); }
+function confirmEdit(idx) {
+    state.ings[idx] = { Item: document.getElementById('ed-n').value, Qty: document.getElementById('ed-q').value, Unit: document.getElementById('ed-u').value, 'Use By': document.getElementById('ed-d').value, Storage: state.ings[idx].Storage };
+    editingIdx = null;
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI();
+    pushAll();
+}
+
 async function sync() {
     if(!state.su) return;
     document.getElementById('status').innerText = "Syncing...";
     try {
-        // We MUST use the full URL and let Google handle the redirect
-        const response = await fetch(state.su, {
-            method: 'GET',
-            mode: 'cors', // Ensure CORS is enabled
-        });
-        
-        const d = await response.json();
-        
-        if(d.error) throw new Error(d.error);
-
+        const r = await fetch(state.su + "?action=pullAll&t=" + Date.now());
+        const d = await r.json();
         state.ings = d.ingredients || [];
         state.staples = d.staples || [];
-        
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderI();
         renderStapleTags();
         document.getElementById('status').innerText = "Ready";
-    } catch(e) { 
-        console.error("Full Error:", e);
-        document.getElementById('status').innerText = "Sync Error"; 
-    }
+    } catch(e) { document.getElementById('status').innerText = "Sync Error"; }
 }
 
 async function pushAll() {
-    document.getElementById('status').innerText = "Syncing...";
+    document.getElementById('status').innerText = "Saving...";
     const payload = { action: 'pushAll', ings: state.ings, staples: state.staples, plan: state.plan };
     await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-    document.getElementById('status').innerText = "Saved";
-    alert("Full sync complete.");
+    document.getElementById('status').innerText = "Ready";
 }
 
-async function push(action, name = null) {
-    const payload = { action, name: name || document.getElementById('n').value, qty: document.getElementById('q').value, storage: document.getElementById('s').value, category: document.getElementById('c').value, useBy: document.getElementById('d').value };
-    await fetch(state.su, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-    setTimeout(sync, 1000);
+function pushItem() {
+    state.ings.push({ Item: document.getElementById('n').value, Qty: document.getElementById('q').value, Unit: document.getElementById('u').value, Storage: document.getElementById('s').value, 'Use By': document.getElementById('d').value });
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI();
+    pushAll();
 }
 
-function renderI() {
-    document.getElementById('iList').innerHTML = (state.ings || []).map(i => `
-        <div class="ing-item">
-            <div><strong>${i.Item} (x${i.Qty})</strong><br><small>${i.Storage} | Use by: ${fmtD(i['Use By'])}</small></div>
-            <button class="btn btn-s" style="width:auto;margin:0;padding:0.5rem;" onclick="push('use','${i.Item}')">Eat</button>
-        </div>`).join('');
+function eatItem(name) {
+    state.ings = state.ings.filter(i => i.Item !== name);
+    localStorage.setItem('ftf_v2', JSON.stringify(state));
+    renderI();
+    pushAll();
 }
 
 async function generate() {
     const btn = document.getElementById('gBtn');
-    const debug = document.getElementById('debugBox');
-    if(!state.ak) return alert("Add API Key in Settings.");
-    
-    btn.disabled = true; debug.style.display = 'none';
+    if(!state.ak) return alert("Add API Key");
+    btn.disabled = true;
     document.getElementById('pCont').innerHTML = "Chef is thinking...";
 
     const today = new Date().toLocaleDateString('en-GB');
-    const prompt = `Return ONLY JSON format: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
-    Plan 7 days starting from ${today} using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. 
-    Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast. Assume basic pantry items (oil, salt) are available.`;
+    const prompt = `Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday","lunch":"...","dinner":"..."}]}. 
+    Ingredients: ${state.ings.map(i => i.Qty + (i.Unit||'units') + ' ' + i.Item).join(', ')}. Staples: ${state.staples.join(', ')}.
+    RULES: 1. Lunch: MUST BE HEALTHY AND LOW CALORIE. 2. Dinner: Family meal using fridge stock. 3. Sunday: Roast. 4. Start from ${today}.`;
 
     try {
         const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
-
         const d = await r.json();
-        if (d.error) throw new Error(d.error.message);
-
-        let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
+        let text = d.candidates[0].content.parts[0].text.replace(/```json|
+```/gi, "").trim();
         state.plan = JSON.parse(text);
         localStorage.setItem('ftf_v2', JSON.stringify(state));
         renderP();
-        pushAll(); // Log the new plan to the sheet
-    } catch (e) { 
-        debug.style.display = 'block'; debug.innerText = "Error: " + e.message;
-        document.getElementById('pCont').innerHTML = "Failed to generate plan."; 
-    }
+        pushAll();
+    } catch (e) { document.getElementById('pCont').innerHTML = "Error: " + e.message; }
     btn.disabled = false;
 }
 
 function renderP() {
     if(!state.plan || !state.plan.days) return;
-    document.getElementById('pCont').innerHTML = state.plan.days.map(d => `
-        <div class="day-card">
-            <div class="day-h">${d.day} (${d.date})</div>
-            <div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div>
-            <div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div>
-        </div>`).join('');
+    document.getElementById('pCont').innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day} (${d.date})</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
 }
 
 document.getElementById('ak').value = state.ak || '';
