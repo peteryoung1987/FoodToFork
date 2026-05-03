@@ -188,10 +188,17 @@ async function generate() {
     if(!state.ak) return alert("API Key Required");
     btn.disabled = true; btn.innerText = "Chef is thinking...";
     
-    const prompt = `Family of 3 (2 adults, 1 child). Standardised Qty. Sunday Roast mandatory.
-    Ingredients: ${state.ings.map(i => i.Qty + i.Unit + ' ' + i.Item).join(', ')}.
-    Staples: ${state.staples.join(', ')}.
-    Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":["item1"]}]}. 
+    // THE GLOBAL "NORMAL STAPLES" LOGIC
+    const prompt = `
+    Family of 3 (2 adults, 9yo girl). 2.1 ratio (Lunch for 1, Dinner for 3).
+    Sunday Roast is mandatory.
+    
+    INVENTORY: ${state.ings.map(i => i.Qty + i.Unit + ' ' + i.Item).join(', ')}.
+    USER STAPLES: ${state.staples.join(', ')}.
+    
+    UNIVERSAL PANTRY: Assume the user has all "normal" UK pantry essentials (Pasta, Rice, Flour, Sugar, Oil, Dried Herbs, Spices, Stock Cubes, Bread, Condiments/Mayo/Ketchup).
+    
+    Return ONLY JSON: {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":["item from inventory"]}]}. 
     Plan 7 days from ${new Date().toLocaleDateString('en-GB')}.`;
 
     try {
@@ -211,32 +218,40 @@ async function generate() {
 async function getRecipe(meal) {
     const m = document.createElement('div');
     m.className = 'recipe-modal';
-    m.innerHTML = `<h2>Writing recipe for ${meal}...</h2>`;
+    m.innerHTML = `<div style="max-width:500px; margin:auto;"><h2>Chef is writing...</h2></div>`;
     document.body.appendChild(m);
 
-    const p = `Recipe for "${meal}" using ${state.ings.map(i=>i.Item).join(', ')}. UK prices/units. Casual tone, swearing allowed.`;
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
-    });
-    const d = await r.json();
-    m.innerHTML = `<h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap;">${d.candidates[0].content.parts[0].text}</div><button class="btn btn-p" onclick="this.parentElement.remove()">Close</button>`;
+    const p = `
+    TASK: Write a punchy recipe for "${meal}".
+    
+    CONSTRAINTS:
+    1. Focus ONLY on the meal: ${meal}.
+    2. Use items from Inventory: ${state.ings.map(i=>i.Item).join(', ')}.
+    3. Use User Staples: ${state.staples.join(', ')}.
+    4. You MAY use any standard UK pantry essentials (Pasta, Rice, Flour, Oil, Stock, Bread, Spices, etc.).
+    5. DO NOT mention ingredients from the list that aren't used in this recipe. No jokes about other food in the fridge.
+    6. Shopping List section: ONLY for the specific ingredients used here. UK pricing.
+    7. Tone: Direct, casual, UK-centric. Swearing allowed. Max 200 words.
+    `;
+
+    try {
+        const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+        });
+        const d = await r.json();
+        const recipeText = d.candidates[0].content.parts[0].text;
+        m.innerHTML = `<div style="max-width:500px; margin:auto;"><h1 style="font-family:Playfair Display">${meal}</h1><div style="margin:20px 0; white-space:pre-wrap; line-height:1.5;">${recipeText}</div><button class="btn btn-p" onclick="this.parentElement.remove()">Close</button></div>`;
+    } catch(e) { m.innerHTML = "Recipe failed. Probably the WiFi. Or the ghost in the machine."; }
 }
 
 async function regenMeal(date, hint = "") {
     document.getElementById('status').innerText = "Rerolling...";
-    const p = `Regenerate Dinner for ${date}. ${hint ? 'Hint: '+hint : ''}. Inventory: ${state.ings.map(i=>i.Item).join(',')}. Return JSON: {"dinner":"...", "used_ings":[]}`;
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
-    });
-    const d = await r.json();
-    const res = JSON.parse(d.candidates[0].content.parts[0].text.replace(/```json|```/gi, ""));
-    const idx = state.plan.days.findIndex(x => x.date === date);
-    state.plan.days[idx].dinner = res.dinner;
-    state.plan.days[idx].used_ings = res.used_ings;
-    renderP(); pushAll();
-}
+    const p = `
+    Regenerate Dinner for ${date}. ${hint ? 'Hint: '+hint : ''}. 
+    Inventory: ${state.ings.map(i=>i.Item).join(',')}. 
+    Standard UK Pantry items are available.
+    Return JSON: {"dinner":"...", "used_ings":[]}`;
 
 function hintMeal(date) { const h = prompt("Any specific idea?"); if(h) regenMeal(date, h); }
 
