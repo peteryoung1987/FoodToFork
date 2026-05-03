@@ -61,6 +61,7 @@
                 <select id="u">
                     <option value="units">units</option>
                     <option value="g">g</option>
+                    <option value="ml">ml</option>
                 </select>
             </div>
         </div>
@@ -102,15 +103,12 @@ try {
 let editingIdx = null;
 
 function sh(v) {
-    // Hide all views and deactivate all tabs
     document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
     
-    // Show selected view
     const targetView = document.getElementById('v-' + v);
     if (targetView) targetView.classList.add('active');
     
-    // Activate the correct tab based on ID
     const targetTab = document.getElementById('t-' + v);
     if (targetTab) targetTab.classList.add('active');
 
@@ -154,8 +152,8 @@ function renderI() {
     list.innerHTML = (state.ings || []).map((i, idx) => {
         const name = i.Item || 'Unknown';
         const cat = i.Category || ''; 
-        const qty = i.Quantity || i.qty || ''; 
-        const unit = i.Unit || '';     
+        const qty = i.Qty || ''; 
+        const unit = i.Unit || '';      
         const store = i.Storage || ''; 
         const exp = i['Use By'] || '';
 
@@ -191,7 +189,7 @@ function confirmEdit(idx) {
     state.ings[idx] = { 
         Item: document.getElementById('ed-n').value,
         Category: document.getElementById('ed-cat').value, 
-        Quantity: document.getElementById('ed-q').value, 
+        Qty: document.getElementById('ed-q').value, 
         Unit: document.getElementById('ed-u').value, 
         Storage: document.getElementById('ed-s').value,
         'Use By': document.getElementById('ed-d').value
@@ -228,7 +226,7 @@ function pushItem() {
     state.ings.push({ 
         Item: document.getElementById('n').value, 
         Category: '', 
-        Quantity: document.getElementById('q').value, 
+        Qty: document.getElementById('q').value, 
         Unit: document.getElementById('u').value, 
         Storage: document.getElementById('s').value, 
         'Use By': document.getElementById('d').value 
@@ -252,7 +250,7 @@ async function generate() {
   btn.disabled = true; debug.style.display = 'none';
   document.getElementById('pCont').innerHTML = "Chef is thinking...";
   const today = new Date().toLocaleDateString('en-GB');
-    // this should be a detailed prompt tp the gemini API with the staples, the ingredients and the general info to show that staples are available etc
+
     const prompt = `
     Context:
     - Family of 3: 2 adults and one 9-year-old girl.
@@ -262,7 +260,7 @@ async function generate() {
     - Sunday: Must be a traditional Roast.
     - Inventory Logic: Use the quantities provided. If I have "2 Chicken Breasts", that is ONE dinner for 3 people; do not use them again.
 
-    Ingredients Available: ${state.ings.map(i => (i.Quantity||i.qty) + (i.Unit||'units') + ' ' + i.Item).join(', ')}
+    Ingredients Available: ${state.ings.map(i => (i.Qty || 0) + (i.Unit||'units') + ' ' + i.Item).join(', ')}
     Staples (assume always available): ${state.staples.join(', ')}
 
     Return ONLY a JSON object:
@@ -278,7 +276,6 @@ async function generate() {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const d = await r.json();
-    // FIXED LINE BELOW: No more accidental line breaks
     let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
