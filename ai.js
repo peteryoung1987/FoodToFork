@@ -1,6 +1,6 @@
 async function generatePlan() {
     const btn = document.getElementById('gBtn');
-    if(!state.ak) return alert("Need an API Key, boss.");
+    if(!state.ak) return alert("API Key Required");
     
     btn.disabled = true;
     btn.innerText = "Consulting the Chef...";
@@ -10,28 +10,28 @@ async function generatePlan() {
         Create a 7-day UK meal plan starting ${new Date().toLocaleDateString('en-GB')}.
         
         CONSTRAINTS:
-        - Lunch: For a single male. High protein, high volume, low calorie (e.g., big salads, lean protein).
+        - Lunch: For a single male. High protein, high volume, low calorie.
         - Dinner: For a family of 3 (2 adults, 9yo girl). 
         - MANDATORY: Sunday Dinner MUST be a traditional Sunday Roast.
         - INVENTORY: ${state.ings.map(i => `${i.Qty}${i.Unit} ${i.Item} (Expires: ${i['Use By']})`).join(', ')}.
         - STAPLES: ${state.staples.join(', ')}.
-        - Assume standard UK pantry items (spices, flour, oils, etc.) are available.
+        - Assume standard UK pantry items are available.
         
         OUTPUT: Return ONLY valid JSON in this format:
         {"days":[{"date":"DD/MM/YYYY", "day":"Monday", "lunch":"...", "dinner":"...", "used_ings":[]}]}
     `;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+        // LOCKED MODEL: gemini-3.1-flash-lite-preview
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
         
         const data = await response.json();
-        let rawText = data.candidates[0].content.parts[0].text;
+        const rawText = data.candidates[0].content.parts[0].text;
         
-        // Technical Optimisation: Clean AI preamble/markdown
         const jsonMatch = rawText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             state.plan = JSON.parse(jsonMatch[0]);
@@ -41,7 +41,7 @@ async function generatePlan() {
         }
     } catch (e) {
         console.error(e);
-        alert("AI shit the bed. Check your API key or connection.");
+        alert("Error generating plan. Check console.");
     }
 
     btn.disabled = false;
@@ -49,22 +49,63 @@ async function generatePlan() {
     setStatus("Ready");
 }
 
+async function getRecipe(meal) {
+    if(!state.ak) return alert("API Key Required");
+    
+    const modal = document.createElement('div');
+    modal.id = "recipe-overlay";
+    modal.className = "recipe-modal-full";
+    modal.innerHTML = `<div class="recipe-content"><h2>Preparing ${meal}...</h2></div>`;
+    document.body.appendChild(modal);
+
+    const p = `
+        TASK: Write a recipe for "${meal}".
+        CONSTRAINTS:
+        - Use Inventory: ${state.ings.map(i=>i.Item).join(', ')}.
+        - Tone: Direct, UK-centric.
+        - Include a "Shopping List" for specific recipe items with UK prices.
+    `;
+
+    try {
+        // LOCKED MODEL: gemini-3.1-flash-lite-preview
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
+        });
+        
+        const data = await response.json();
+        const recipeText = data.candidates[0].content.parts[0].text;
+        
+        modal.innerHTML = `
+            <div class="recipe-content">
+                <h1>${meal}</h1>
+                <div class="recipe-text">${recipeText.replace(/\n/g, '<br>')}</div>
+                <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">← Back to Plan</button>
+            </div>
+        `;
+    } catch(e) {
+        alert("Recipe fetch failed.");
+        modal.remove();
+    }
+}
+
 async function regenMeal(date) {
     setStatus("Rerolling...");
-    const hint = prompt("Any specific vibe for this reroll?");
+    const hint = prompt("Any specific idea for this meal?");
     
-    const promptText = `
-        Regenerate the Dinner for ${date}. 
-        ${hint ? `User Hint: ${hint}` : ''}
-        Inventory to use up: ${state.ings.map(i => i.Item).join(', ')}.
+    const p = `
+        Regenerate Dinner for ${date}. ${hint ? 'Hint: '+hint : ''}. 
+        Inventory: ${state.ings.map(i=>i.Item).join(',')}. 
         Return ONLY JSON: {"dinner":"...", "used_ings":[]}
     `;
 
     try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+        // LOCKED MODEL: gemini-3.1-flash-lite-preview
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${state.ak}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            body: JSON.stringify({ contents: [{ parts: [{ text: p }] }] })
         });
         
         const data = await response.json();
@@ -79,48 +120,6 @@ async function regenMeal(date) {
                 syncToSheet();
             }
         }
-    } catch(e) { alert("Couldn't reroll."); }
+    } catch(e) { alert("Could not update meal."); }
     setStatus("Ready");
-}
-
-async function getRecipe(meal) {
-    if(!state.ak) return alert("API Key missing.");
-    
-    // Create Modal
-    const modal = document.createElement('div');
-    modal.id = "recipe-overlay";
-    modal.className = "recipe-modal-full"; // Add this class to your CSS
-    modal.innerHTML = `<div class="loader-box"><h2>Asking the Chef for ${meal}...</h2></div>`;
-    document.body.appendChild(modal);
-
-    const prompt = `
-        TASK: Write a recipe for "${meal}".
-        USE INVENTORY: ${state.ings.map(i=>i.Item).join(', ')}.
-        UK Focus: Use UK measurements (g, ml, cm) and pantry items.
-        FORMAT: Direct, no fluff. Include:
-        1. Ingredients (highlighting which are from inventory).
-        2. Simple Method.
-        3. A "Shopping List" section for items not in inventory with estimated UK prices.
-    `;
-
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        
-        const data = await response.json();
-        const recipeHtml = data.candidates[0].content.parts[0].text.replace(/\n/g, '<br>');
-
-        modal.innerHTML = `
-            <div class="recipe-content">
-                <h1>${meal}</h1>
-                <div class="recipe-text">${recipeHtml}</div>
-                <button class="btn btn-p" onclick="document.getElementById('recipe-overlay').remove()">Close Recipe</button>
-            </div>
-        `;
-    } catch (e) {
-        modal.innerHTML = `<div>Error fetching recipe. <button onclick="this.parentElement.parentElement.remove()">Close</button></div>`;
-    }
 }
