@@ -102,10 +102,18 @@ try {
 let editingIdx = null;
 
 function sh(v) {
+    // Hide all views and deactivate all tabs
     document.querySelectorAll('.view').forEach(e => e.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(e => e.classList.remove('active'));
-    document.getElementById('v-' + v).classList.add('active');
-    document.querySelector(`.tab[onclick="sh('${v}')"]`).classList.add('active');
+    
+    // Show selected view
+    const targetView = document.getElementById('v-' + v);
+    if (targetView) targetView.classList.add('active');
+    
+    // Activate the correct tab based on ID
+    const targetTab = document.getElementById('t-' + v);
+    if (targetTab) targetTab.classList.add('active');
+
     if(v === 'ings') renderI();
     if(v === 'set') renderStapleTags();
 }
@@ -125,22 +133,28 @@ function saveS() {
 
 function renderStapleTags() {
     const container = document.getElementById('stapleTags');
+    if(!container) return;
     container.innerHTML = (state.staples || []).map((s, i) => `<div class="staple-tag">${s}<span class="remove-staple" onclick="removeStaple(${i})">×</span></div>`).join('');
 }
 
 function addStapleTag() {
     const input = document.getElementById('newStaple');
-    if(input.value.trim()) { state.staples.push(input.value.trim()); input.value = ''; renderStapleTags(); }
+    if(input.value.trim()) { 
+        state.staples.push(input.value.trim()); 
+        input.value = ''; 
+        renderStapleTags(); 
+    }
 }
 
 function removeStaple(i) { state.staples.splice(i, 1); renderStapleTags(); }
 
 function renderI() {
     const list = document.getElementById('iList');
+    if(!list) return;
     list.innerHTML = (state.ings || []).map((i, idx) => {
         const name = i.Item || 'Unknown';
         const cat = i.Category || ''; 
-        const qty = i.Quantity || i.qty || ''; // FIX: Support both cases
+        const qty = i.Quantity || i.qty || ''; 
         const unit = i.Unit || '';     
         const store = i.Storage || ''; 
         const exp = i['Use By'] || '';
@@ -170,15 +184,8 @@ function renderI() {
     }).join('');
 }
     
-function startEdit(idx) { 
-    editingIdx = idx; 
-    renderI(); 
-}
-
-function cancelEdit() { 
-    editingIdx = null; 
-    renderI(); 
-}
+function startEdit(idx) { editingIdx = idx; renderI(); }
+function cancelEdit() { editingIdx = null; renderI(); }
 
 function confirmEdit(idx) {
     state.ings[idx] = { 
@@ -221,7 +228,7 @@ function pushItem() {
     state.ings.push({ 
         Item: document.getElementById('n').value, 
         Category: '', 
-        Quantity: document.getElementById('q').value, // FIX: Capital Q
+        Quantity: document.getElementById('q').value, 
         Unit: document.getElementById('u').value, 
         Storage: document.getElementById('s').value, 
         'Use By': document.getElementById('d').value 
@@ -256,8 +263,8 @@ async function generate() {
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
     const d = await r.json();
-    let text = d.candidates[0].content.parts[0].text.replace(/
-```json|```/gi, "").trim();
+    // FIXED LINE BELOW: No more accidental line breaks
+    let text = d.candidates[0].content.parts[0].text.replace(/```json|```/gi, "").trim();
     state.plan = JSON.parse(text);
     localStorage.setItem('ftf_v2', JSON.stringify(state));
     renderP();
@@ -276,6 +283,7 @@ function renderP() {
     cont.innerHTML = state.plan.days.map(d => `<div class="day-card"><div class="day-h">${d.day} (${d.date})</div><div class="m-box"><label>Lunch</label><p>${d.lunch}</p></div><div class="m-box"><label>Dinner</label><p>${d.dinner}</p></div></div>`).join('');
 }
 
+// Initialize
 document.getElementById('ak').value = state.ak || '';
 document.getElementById('su').value = state.su || '';
 if(state.plan) renderP();
