@@ -174,12 +174,12 @@ async function generate() {
   const prompt = `Return ONLY JSON format: {"days":[{"day":"Monday","lunch":"...","dinner":"..."}]}. Plan 7 days using Ingredients: ${state.ings.map(i => i.Item).join(', ')} and Staples: ${state.staples.join(', ')}. Lunch: No cook. Dinner: Cooked family meal. Sunday: Roast.`;
 
   try {
-    // Updated to use the 3.1 Flash Lite model from your allowance list
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-3.1-flash-lite:generateContent?key=${state.ak}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    });
+// URL CHANGE: Use v1beta and the specific technical ID
+const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${state.ak}`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+});
     
     const d = await r.json();
     
