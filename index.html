@@ -171,6 +171,16 @@ function renderI() {
         </div>`;
     }).join('');
 }
+    
+function startEdit(idx) { 
+    editingIdx = idx; 
+    renderI(); 
+}
+
+function cancelEdit() { 
+    editingIdx = null; 
+    renderI(); 
+}
 
 function confirmEdit(idx) {
     state.ings[idx] = { 
